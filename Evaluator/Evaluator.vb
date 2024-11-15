@@ -2,8 +2,8 @@
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.Tab
 
 Public Class Evaluator
-    Public Fox_True As Fox_Bool = New Fox_Bool() With {.Value = True}
-    Public Fox_False As Fox_Bool = New Fox_Bool() With {.Value = False}
+    Public Shared Fox_True As Fox_Bool = New Fox_Bool() With {.Value = True}
+    Public Shared Fox_False As Fox_Bool = New Fox_Bool() With {.Value = False}
     Public Shared Fox_Nothing As Fox_Nothing = New Fox_Nothing()
     Public Fox_One As Fox_Integer = New Fox_Integer() With {.Value = 1}
     Public Fox_Zero As Fox_Integer = New Fox_Integer() With {.Value = 0}
@@ -76,11 +76,6 @@ Public Class Evaluator
                 Return New Fox_ReturnValue With {.Value = val}
 
             Case GetType(DimStatement) '若为 Dim 语句
-                Dim val = eval(node.Value, env)
-
-                '检查是否为错误对象
-                If isError(val) Then Return val
-
                 Dim dim_stmt = TryCast(node, DimStatement)
 
                 Dim get_Ident = env.GetValue(dim_stmt.Name.ToString)
@@ -88,18 +83,12 @@ Public Class Evaluator
                     Return ThrowError($"标识符 {dim_stmt.Name.ToString} 已存在! 内容为:{get_Ident.Item1.Inspect}")
                 End If
 
-                '如果变量的值不为 FunctionLiteral 类型
-                If (dim_stmt.Value.GetType().FullName <> New FunctionLiteral().GetType.FullName) Then
-                    '设置值
-                    env.SetValue(dim_stmt.Name.Value, eval(dim_stmt.Value, env))
-                Else '否则
+                Dim value = eval(dim_stmt.Value, env)
 
-                    '获取函数
-                    Dim f = TryCast(dim_stmt.Value, FunctionLiteral)
+                '检查是否为错误对象
+                If isError(value) Then Return value
 
-                    env.SetValue(dim_stmt.Name.Value, eval(f, env))
-
-                End If
+                env.SetValue(dim_stmt.Name.Value, value)
 
             Case GetType(FunctionLiteral)
                 '获取函数名
@@ -130,6 +119,22 @@ Public Class Evaluator
                 If args.Count = 1 AndAlso isError(args(0)) Then Return args(0)
 
                 Return applyFunction(Func, args)
+            'Case GetType(ObjectCreateExpression) '若为创建对象表达式
+            '    Dim objCreateExp = TryCast(node, ObjectCreateExpression)
+
+            '    '计算表达式的值
+            '    Dim ObjType = eval(objCreateExp.ObjType, env)
+
+            '    '判断是否为错误对象
+            '    If isError(ObjType) Then Return ObjType
+
+            '    '计算所有表达式实参
+            '    Dim args = evalExpressions(objCreateExp.Arguments, env)
+
+            '    '如果参数数量为1 并且 这一个参数为错误对象 返回这一个参数
+            '    If args.Count = 1 AndAlso isError(args(0)) Then Return args(0)
+
+            '    Return applyFunction(ObjType, args)
 
             Case GetType(Identifier) '若为标识符
 
@@ -251,6 +256,54 @@ Public Class Evaluator
 
                 '如果没有链式调用或链式调用处理完毕，返回当前调用的结果  
                 Return result
+            Case GetType(NotExpression)
+                Dim notExp = TryCast(node, NotExpression)
+                Dim rightObject = eval(notExp.Right, env)
+                If isError(rightObject) Then Return rightObject
+
+                Return nativeBoolToBooleanObject(Not isTruthy(rightObject))
+
+            Case GetType(AndExpression)
+                Dim andExp = TryCast(node, AndExpression)
+
+                Dim leftObject = eval(andExp.Left, env)
+                If isError(leftObject) Then Return leftObject
+
+                Dim leftBoolObject As Fox_Object = TryCast(Builtins.builtinFuncs("CBool").BuiltinFunction({leftObject}), Fox_Object)
+                If Not isTruthy(leftBoolObject) Then
+                    Return Fox_False
+                End If
+
+                Dim rightObject = eval(andExp.Right, env)
+                If isError(rightObject) Then Return rightObject
+                Dim rightBoolObject As Fox_Object = TryCast(Builtins.builtinFuncs("CBool").BuiltinFunction({rightObject}), Fox_Object)
+
+                If Not isTruthy(rightBoolObject) Then
+                    Return Fox_False
+                End If
+
+                Return Fox_True
+
+            Case GetType(OrExpression)
+                Dim orExp = TryCast(node, OrExpression)
+
+                Dim leftObject = eval(orExp.Left, env)
+                If isError(leftObject) Then Return leftObject
+
+                Dim leftBoolObject As Fox_Object = TryCast(Builtins.builtinFuncs("CBool").BuiltinFunction({leftObject}), Fox_Object)
+                If isTruthy(leftBoolObject) Then
+                    Return Fox_True
+                End If
+
+                Dim rightObject = eval(orExp.Right, env)
+                If isError(rightObject) Then Return rightObject
+                Dim rightBoolObject As Fox_Object = TryCast(Builtins.builtinFuncs("CBool").BuiltinFunction({rightObject}), Fox_Object)
+
+                If isTruthy(rightBoolObject) Then
+                    Return Fox_True
+                End If
+
+                Return Fox_False
         End Select
 
         Return Nothing
@@ -377,8 +430,8 @@ Public Class Evaluator
                 Dim evaluated = eval(f.Body, extendedEnv)
                 Return unwrapReturnValue(evaluated)
             Case GetType(Fox_Builtin)
-                Dim builtin_f = TryCast(func, Fox_Builtin)
-                Return builtin_f.BuiltinFunction(args)
+                Dim builtin = TryCast(func, Fox_Builtin)
+                Return builtin.BuiltinFunction(args)
             Case Else
                 Return ThrowError($"不是一个函数: { func.Type}")
         End Select
@@ -435,11 +488,18 @@ Public Class Evaluator
 
         '如果标识符不存在
         If Not val.Item2 Then
-            Dim builtin_val = Nothing
-            Dim builtin = Builtins.builtinFuncs.TryGetValue(Node.Value.Replace(vbCr, "").Replace(vbLf, ""), builtin_val)
-            If builtin Then
-                Return builtin_val
+            Dim builtin_func_val = Nothing
+            Dim builtin_func = Builtins.builtinFuncs.TryGetValue(Node.Value.Replace(vbCr, "").Replace(vbLf, ""), builtin_func_val)
+            If builtin_func Then
+                Return builtin_func_val
             End If
+
+            'Dim builtin_class_val = Nothing
+            'Dim builtin_class = Builtins.builtinClasses.TryGetValue(Node.Value.Replace(vbCr, "").Replace(vbLf, ""), builtin_class_val)
+            'If builtin_class Then
+            '    Return builtin_class_val
+            'End If
+
             '找不到标识符: [标识符]
             Return ThrowError("找不到标识符: " & Node.Value)
         End If
