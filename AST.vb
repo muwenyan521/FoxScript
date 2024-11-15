@@ -408,6 +408,74 @@ Public Class ForStatement
     End Function
 End Class
 
+Public Class NotExpression
+    Implements Expression
+    Public Token As Token   'if'词法单元 
+    Public Right As Expression
+
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        Dim sb As New StringBuilder
+        sb.Append("not")
+        sb.Append(" ")
+        sb.Append(Right.ToString)
+        Return sb.ToString
+    End Function
+End Class
+
+Public Class AndExpression
+    Implements Expression
+    Public Token As Token   ' And 词法单元 
+    Public Left As Expression
+    Public Right As Expression
+
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        Dim sb As New StringBuilder
+        sb.Append(Left.ToString)
+        sb.Append(" and ")
+        sb.Append(Right.ToString)
+        Return sb.ToString
+    End Function
+End Class
+
+Public Class OrExpression
+    Implements Expression
+    Public Token As Token   'if'词法单元 
+    Public Left As Expression
+    Public Right As Expression
+
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        Dim sb As New StringBuilder
+        sb.Append(Left.ToString)
+        sb.Append(" or ")
+        sb.Append(Right.ToString)
+        Return sb.ToString
+    End Function
+End Class
+
 
 Public Class IfExpression
     Implements Expression
@@ -549,6 +617,42 @@ Public Class ObjectCallExpression
         sb.Append(Obj.ToString)
         sb.Append(".")
         sb.Append(Func.ToString())
+        sb.Append("(")
+        sb.Append(Strings.Join(args.ToArray, ", "))
+        sb.Append(")")
+        Return sb.ToString
+    End Function
+End Class
+
+'对象函数创建表达式
+Public Class ObjectCreateExpression
+    Implements Expression
+    Public Token As Token ' NEW 词法单元
+    Public ObjType As Expression
+    Public Arguments As List(Of Expression) '对象创建的参数
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        '返回的大概内容:
+        'New [类/接口名](参数1, 参数2 ....)
+
+        Dim sb As New StringBuilder
+
+        Dim args As New List(Of String)
+        For Each a As Expression In Arguments
+            args.Add(a.ToString)
+        Next
+
+
+        sb.Append("New")
+        sb.Append(" ")
+        sb.Append(ObjType.ToString())
         sb.Append("(")
         sb.Append(Strings.Join(args.ToArray, ", "))
         sb.Append(")")
