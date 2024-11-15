@@ -45,13 +45,13 @@ Module Module1
 
             '遍历所有Statement
             For Each stmt As Statement In program.Statements
+                '求值
                 Dim r As Fox_Object = evaluator.eval(stmt, env)
                 If r IsNot Nothing AndAlso r.Inspect IsNot Nothing Then
                     Console.WriteLine(r.Inspect)
                 End If
             Next
 
-            Console.Read()
         End If
     End Sub
 
