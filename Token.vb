@@ -1,4 +1,7 @@
-﻿Public Enum TokenType
+﻿Imports System.Drawing
+Imports System.Windows.Forms
+
+Public Enum TokenType
     无意义
     PLUS ' +
     MINUS ' - 
@@ -25,6 +28,8 @@
     RPAREN '右括号
     'Type
     BOOL_NOT ' Not
+    BOOL_AND ' And （AndAlso）
+    BOOL_OR ' Or (OrElse)
     BOOL_TRUE
     BOOL_FALSE
     INTNUMBER ' integer 123456
@@ -60,6 +65,8 @@
     ENDWHILE
 
     NOTHING_
+
+    NEW_
 End Enum
 
 Public Class Token
@@ -94,6 +101,8 @@ Public Class Token
         {"(", TokenType.LPAREN},
         {")", TokenType.RPAREN},
         {"IF", TokenType.IF_},
+        {"AND", TokenType.BOOL_AND},
+        {"OR", TokenType.BOOL_OR},
         {"THEN", TokenType.THEN_},
         {"ELSEIF", TokenType.ELSEIF_},
         {"ELSE", TokenType.ELSE_},
@@ -110,6 +119,7 @@ Public Class Token
         {"WHILE", TokenType.WHILE_},
         {"ENDWHILE", TokenType.ENDWHILE},
         {"NOTHING", TokenType.NOTHING_},
+        {"NEW", TokenType.NEW_},
         {vbNullChar, TokenType.EOF}
     }
 
