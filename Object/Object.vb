@@ -226,6 +226,8 @@ Public Class Fox_Builtin
     '继承Object
     Implements Fox_Object
     Public BuiltinFunction As Func(Of IEnumerable(Of Object), Object)
+    Public BuiltinClass As Func(Of IEnumerable(Of Object), Object)
+
     Public Function Type() As ObjectType Implements Fox_Object.Type
         '返回Builtin类型
         Return ObjectType.BUILTIN_OBJ
@@ -241,6 +243,45 @@ Public Class Fox_Double
     '继承Object
     Implements Fox_Object
     Public Value As Double
+    Public Funcs As New Dictionary(Of String, Fox_Builtin) From
+    {
+        {"ToInt", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
+                                                               Dim 所需实参数 = 0
+
+                                                               If args Is Nothing OrElse args.Count = 所需实参数 Then
+                                                                   Return New Fox_Integer With {.Value = CLng(Value)}
+                                                               End If
+
+                                                               If args.Count > 所需实参数 Then
+                                                                   Return Evaluator.ThrowError($"实参过多")
+                                                               End If
+
+                                                           End Function}},
+        {"ToDouble", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
+                                                                  Dim 所需实参数 = 0
+
+                                                                  If args Is Nothing OrElse args.Count = 所需实参数 Then
+                                                                      Return Me
+                                                                  End If
+
+                                                                  If args.Count > 所需实参数 Then
+                                                                      Return Evaluator.ThrowError($"实参过多")
+                                                                  End If
+
+                                                              End Function}},
+        {"ToString", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
+                                                                  Dim 所需实参数 = 0
+
+                                                                  If args Is Nothing OrElse args.Count = 所需实参数 Then
+                                                                      Return New Fox_String With {.Value = CStr(Value)}
+                                                                  End If
+
+                                                                  If args.Count > 所需实参数 Then
+                                                                      Return Evaluator.ThrowError($"实参过多")
+                                                                  End If
+
+                                                              End Function}}
+    }
     Public Function Type() As ObjectType Implements Fox_Object.Type
         '返回Integer类型
         Return ObjectType.DOUBLE_OBJ
@@ -269,7 +310,31 @@ Public Class Fox_Integer
                                                                       Return Evaluator.ThrowError($"实参过多")
                                                                   End If
 
-                                                              End Function}}
+                                                              End Function}},
+        {"ToDouble", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
+                                                                  Dim 所需实参数 = 0
+
+                                                                  If args Is Nothing OrElse args.Count = 所需实参数 Then
+                                                                      Return New Fox_Double With {.Value = CDbl(Value)}
+                                                                  End If
+
+                                                                  If args.Count > 所需实参数 Then
+                                                                      Return Evaluator.ThrowError($"实参过多")
+                                                                  End If
+
+                                                              End Function}},
+        {"ToBool", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
+                                                                Dim 所需实参数 = 0
+
+                                                                If args Is Nothing OrElse args.Count = 所需实参数 Then
+                                                                    Return New Fox_Bool With {.Value = CBool(Value)}
+                                                                End If
+
+                                                                If args.Count > 所需实参数 Then
+                                                                    Return Evaluator.ThrowError($"实参过多")
+                                                                End If
+
+                                                            End Function}}
     }
     Public Function Type() As ObjectType Implements Fox_Object.Type
         '返回Integer类型
@@ -320,6 +385,18 @@ Public Class Fox_Bool
 
                                                                   If args Is Nothing OrElse args.Count = 所需实参数 Then
                                                                       Return New Fox_Double With {.Value = CDbl(Evaluator.BoolToLong(Value))}
+                                                                  End If
+
+                                                                  If args.Count > 所需实参数 Then
+                                                                      Return Evaluator.ThrowError($"实参过多")
+                                                                  End If
+
+                                                              End Function}},
+        {"ToString", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
+                                                                  Dim 所需实参数 = 0
+
+                                                                  If args Is Nothing OrElse args.Count = 所需实参数 Then
+                                                                      Return New Fox_String With {.Value = CStr(Value)}
                                                                   End If
 
                                                                   If args.Count > 所需实参数 Then
