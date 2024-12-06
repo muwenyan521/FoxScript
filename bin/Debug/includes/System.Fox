@@ -1,0 +1,21 @@
+Class Array
+	Dim Value = []
+	Func Add(val)
+		Me.Value += [val]
+	EndFunc
+
+	Func Clear()
+		Me.Value = []
+	EndFunc
+
+	Func New(list)
+		Me.Value = list
+	EndFunc
+EndClass
+
+Class String
+	Dim Empty = ""
+	Func IsEmpty(Text)
+		Return Text == "" 
+	EndFunc
+EndClass
