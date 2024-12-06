@@ -45,7 +45,9 @@ Public Enum TokenType
     'func
     FUNC
     ENDFUNC
+    'class
     CLASS_
+    ENDCLASS
 
     LBRACKET '[
     RBRACKET ']
@@ -67,6 +69,14 @@ Public Enum TokenType
     NOTHING_
 
     NEW_
+
+    READONLY_
+
+    IMPORT
+    AS_
+    SingleQuote
+
+    LET_
 End Enum
 
 Public Class Token
@@ -111,6 +121,7 @@ Public Class Token
         {"ENDFUNC", TokenType.ENDFUNC},
         {",", TokenType.COMMA},
         {"CLASS", TokenType.CLASS_},
+        {"ENDCLASS", TokenType.ENDCLASS},
         {"PUBLIC", TokenType.PUBLIC_},
         {"PRIVATE", TokenType.PRIVATE_},
         {"FOR", TokenType.FOR_},
@@ -118,8 +129,10 @@ Public Class Token
         {"NEXT", TokenType.NEXT_},
         {"WHILE", TokenType.WHILE_},
         {"ENDWHILE", TokenType.ENDWHILE},
-        {"NOTHING", TokenType.NOTHING_},
         {"NEW", TokenType.NEW_},
+        {"IMPORT", TokenType.IMPORT},
+        {"AS", TokenType.AS_},
+        {"LET", TokenType.LET_},
         {vbNullChar, TokenType.EOF}
     }
 
