@@ -1,0 +1,2 @@
+if false then 7 elseif true then 14 else 2 endif
+if false then 7 elseif false then 14 else 28 endif

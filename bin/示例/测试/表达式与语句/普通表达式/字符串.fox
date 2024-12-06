@@ -1,0 +1,9 @@
+dim two_sb = "sb iu" + " sb hkts"
+two_sb
+
+dim iu = "sb iu"
+dim hkts = "sb hkts"
+
+iu == hkts
+iu == "sb iu"
+hkts != "sb hkts"

@@ -1,0 +1,8 @@
+func return_nothing()
+	return Nothing
+endfunc
+
+dim r = return_nothing()
+print(r)
+
+input()

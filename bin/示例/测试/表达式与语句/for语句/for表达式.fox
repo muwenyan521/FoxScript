@@ -1,0 +1,8 @@
+dim sb_arr = ["iu", "hkts", "擎天"]
+for sb in sb_arr
+	print(sb + "是傻逼")
+next
+
+for i in range(100)
+	print(i)
+next

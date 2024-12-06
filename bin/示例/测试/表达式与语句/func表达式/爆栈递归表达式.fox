@@ -1,0 +1,11 @@
+func a(x)
+	print(x)
+
+	if x == 0 then
+		return 0
+	endif
+
+	a(x - 1)
+endfunc
+
+a(1000000)

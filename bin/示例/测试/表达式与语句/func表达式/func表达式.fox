@@ -1,0 +1,8 @@
+func hkts_is_sb(is_sb)
+	return is_sb
+endfunc
+
+dim r = hkts_is_sb(true)
+print(r)
+
+input()

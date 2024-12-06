@@ -1,0 +1,6 @@
+dim test_array = ["iu", "hkts" , "擎天"]
+print(test_array[1])
+
+print(test_array == test_array)
+print(test_array == [])
+print(range(100))

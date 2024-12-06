@@ -1,0 +1,9 @@
+dim s = "iu is sb"
+dim a = len(s)
+print(a)
+print(range(a))
+
+print(CDbl(2) + 1.14)
+print(CInt(CDbl(2) + 1.14))
+msgbox(CStr(CDbl(2) + 1.14),"A Message!")
+wait()

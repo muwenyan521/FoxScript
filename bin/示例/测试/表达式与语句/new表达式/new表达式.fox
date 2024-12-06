@@ -1,0 +1,11 @@
+Class Person
+	Dim Name = "Person"
+	Dim Age = -1
+EndClass
+
+Dim liMing = New Person() 
+liMing.Name = "李明"
+print(liMing.Name)
+print(Person.Name)
+
+input()

@@ -1,0 +1,10 @@
+func counter(x)
+	if x > 100 then
+		return x
+	else
+		dim foobar = 9999
+		return counter(x + 1)
+	endif
+endfunc
+
+counter(100)

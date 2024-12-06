@@ -1,0 +1,2 @@
+dim test_dict = {"入":["iu", "hkts" , "擎天"]}
+print(test_dict["入"][0])

@@ -1,0 +1,17 @@
+func FibonacciRecursive(n)
+	if n < 2 then
+		return n
+	else
+		return FibonacciRecursive(n - 1) + FibonacciRecursive(n - 2)
+	endif
+endfunc
+
+func GetFibonacciSequenceRecursive(count)  
+	dim sequence = []
+	for i in range(count - 1)
+		sequence = sequence + [FibonacciRecursive(i)]
+	next
+	return sequence
+endfunc
+
+GetFibonacciSequenceRecursive(10)
