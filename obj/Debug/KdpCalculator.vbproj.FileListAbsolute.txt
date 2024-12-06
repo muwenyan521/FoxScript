@@ -1,0 +1,11 @@
+D:\soft\KdpCalculator\bin\Debug\KdpCalculator.exe.config
+D:\soft\KdpCalculator\bin\Debug\KdpCalculator.exe
+D:\soft\KdpCalculator\bin\Debug\KdpCalculator.pdb
+D:\soft\KdpCalculator\bin\Debug\KdpCalculator.xml
+D:\soft\KdpCalculator\obj\Debug\KdpCalculator.vbproj.AssemblyReference.cache
+D:\soft\KdpCalculator\obj\Debug\KdpCalculator.Resources.resources
+D:\soft\KdpCalculator\obj\Debug\KdpCalculator.vbproj.GenerateResource.cache
+D:\soft\KdpCalculator\obj\Debug\KdpCalculator.vbproj.CoreCompileInputs.cache
+D:\soft\KdpCalculator\obj\Debug\KdpCalculator.exe
+D:\soft\KdpCalculator\obj\Debug\KdpCalculator.xml
+D:\soft\KdpCalculator\obj\Debug\KdpCalculator.pdb

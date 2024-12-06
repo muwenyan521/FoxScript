@@ -1,0 +1,11 @@
+D:\soft\KdpScript\obj\Debug\KdpScript.vbproj.AssemblyReference.cache
+D:\soft\KdpScript\obj\Debug\KdpScript.Resources.resources
+D:\soft\KdpScript\obj\Debug\KdpScript.vbproj.GenerateResource.cache
+D:\soft\KdpScript\obj\Debug\KdpScript.vbproj.CoreCompileInputs.cache
+D:\soft\KdpScript\obj\Debug\KdpCalculator.xml
+D:\soft\KdpScript\bin\Debug\KdpScript.exe.config
+D:\soft\KdpScript\bin\Debug\KdpScript.exe
+D:\soft\KdpScript\bin\Debug\KdpScript.pdb
+D:\soft\KdpScript\bin\Debug\KdpCalculator.xml
+D:\soft\KdpScript\obj\Debug\KdpScript.exe
+D:\soft\KdpScript\obj\Debug\KdpScript.pdb
