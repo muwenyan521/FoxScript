@@ -3,7 +3,7 @@
     Private _pos As Integer = 0 ' 当前分析的位置
     Private _nextPos As Integer = 0 ' 下一个分析的位置
     Public _readingChar As Char  '当前读取的字符
-    Private invaild_chars As New List(Of Char) From {"("c, ")"c, ","c, "["c, "]"c, ","c, "{"c, "}"c, ":"c, "."c}
+    Private invaild_chars As New List(Of Char)
 
     ' Lexer构造函数，初始化文本和位置
     Public Sub New(text As String)
@@ -11,8 +11,15 @@
         _code = text
         _pos = 0
 
+        Dim chars = Token.TokenTypeDict.Keys.Where(Function(item As String) item.Count = 1).ToList
+
+        For Each TokenTypeChar As String In chars
+            invaild_chars.Add(TokenTypeChar)
+        Next
+
         '这里得readChar一下，不然报空异常就老实了
         readChar()
+
     End Sub
 
     Public Function lexer() As List(Of Token)
@@ -24,6 +31,7 @@
             tkns.Add(tkn)
         End While
         tkns.Add(New Token(TokenType.EOF, vbNullChar))
+
         Return tkns
     End Function
 
@@ -134,6 +142,9 @@
             Case """"
                 tkn.TokenType = TokenType.STRING_
                 tkn.Value = readString().Replace(vbCr, "")
+            Case "'"
+                tkn.TokenType = TokenType.SingleQuote
+                tkn.Value = readNote.Replace(vbCr, "")
             Case Else
                 '如果当前字符为数字
                 If Char.IsDigit(_readingChar) Then
@@ -156,6 +167,20 @@
         readChar()
         Return tkn
     End Function
+
+    Public Function readNote() As String
+        Dim p = _pos
+
+        Dim exit_while = False
+        While Not exit_while
+            readChar()
+            If _readingChar = "'" OrElse _readingChar = vbNullChar Then
+                exit_while = True
+            End If
+        End While
+        Return PySubString(_code, p + 1, _pos)
+    End Function
+
     Public Sub CheckChar()
         If invaild_chars.Contains(_readingChar) Then
             _pos -= 1
@@ -209,13 +234,27 @@
         End While
         Return PySubString(_code, p + 1, _pos)
     End Function
+
+    Public Function IsChineseCharacter(charToCheck As Char) As Boolean
+        Dim code As Integer = AscW(charToCheck)
+        Return (code >= &H4E00 AndAlso code <= &H9FFF) OrElse
+           (code >= &H3400 AndAlso code <= &H4DBF) OrElse
+           (code >= &H20000 AndAlso code <= &H2A6DF) OrElse
+           (code >= &H2A700 AndAlso code <= &H2B73F) OrElse
+           (code >= &H2B740 AndAlso code <= &H2B81F) OrElse
+           (code >= &H2B820 AndAlso code <= &H2CEAF) OrElse
+           (code >= &H2CEB0 AndAlso code <= &H2EBEF) OrElse
+           (code >= &H30000 AndAlso code <= &H3134F)
+    End Function
+
+
     Public Function ReadIdentifier() As String
         '记录当前索引
         Dim p = _pos
 
         '坑爹vb.net (艹皿艹 )
         '重复读取直到字符不是字母 或者 下划线 
-        While (Char.IsLetter(_readingChar) OrElse _readingChar = "_")
+        While (Char.IsLetter(_readingChar) OrElse _readingChar = "_" OrElse IsChineseCharacter(_readingChar))
             readChar()
         End While
 
@@ -227,7 +266,7 @@
         Return PySubString(_code, p, _pos + 1)
     End Function
 
-    Function PySubString(ByVal str As String, ByVal start As Integer, ByVal end_ As Integer, Optional ByVal step_ As Integer = 1) As String
+    Shared Function PySubString(ByVal str As String, ByVal start As Integer, ByVal end_ As Integer, Optional ByVal step_ As Integer = 1) As String
         Dim result As New System.Text.StringBuilder()
         ' 处理负索引
         Dim startIndex As Integer = If(start < 0, str.Length + start, start)
