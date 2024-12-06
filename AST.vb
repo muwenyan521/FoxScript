@@ -1,5 +1,6 @@
 ﻿
 Imports System.Text
+Imports System.Numerics
 
 Public Interface Node
     Function TokenLiteral() As String
@@ -18,28 +19,34 @@ End Interface
 '程序
 Public Class Program
     Implements Node
-    Public Statements As List(Of Statement) 'Statement列表
-    Public Function TokenLiteral() As String Implements Node.TokenLiteral '这个不知道意义是啥
-        If Len(Statements) > 0 Then
+    Public Statements As List(Of Statement) ' 存放着所有语句的列表
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        '判断语句列表的语句数量
+        If Statements.Count > 0 Then
+            '返回第一个语句中的Token的TokenLiteral
             Return Statements(0).TokenLiteral()
         End If
         Return ""
     End Function
 
     Public Overrides Function ToString() As String Implements Node.ToString '获取所有Statement的字符串
-        Dim out As New StringBuilder()
+        Dim sb As New StringBuilder()
+
+        '将所有语句转成字符串
         For Each s As Statement In Statements
-            out.Append(s.ToString)
+            sb.Append(s.ToString)
         Next
-        Return out.ToString()
+
+        Return sb.ToString()
     End Function
 End Class
 
 '标识符
 Public Class Identifier
     Implements Expression '为了继承而继承
-    Public Token As Token ' token.IDENT 词法单元 
-    Public Value As String
+    Public Token As Token ' IDENT 词法单元 
+    Public Value As String '标识符的值
+    Public IsReadOnly As Boolean = False
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -58,8 +65,8 @@ End Class
 '整数
 Public Class IntegerLiteral
     Implements Expression '为了继承而继承
-    Public Token As Token ' token.IDENT 词法单元 
-    Public Value As Long
+    Public Token As Token 'INTNUMBER  词法单元 
+    Public Value As BigInteger '使用BigInteger储存数字
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -77,8 +84,8 @@ End Class
 '双精度浮点数
 Public Class DoubleLiteral
     Implements Expression '为了继承而继承
-    Public Token As Token ' token.Dot 词法单元 
-    Public Value As Double
+    Public Token As Token
+    Public Value As Decimal
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -96,7 +103,7 @@ End Class
 '字符串
 Public Class StringLiteral
     Implements Expression '为了继承而继承
-    Public Token As Token ' token.STRING_ 词法单元 
+    Public Token As Token ' STRING_ 词法单元 
     Public Value As String
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
@@ -115,7 +122,7 @@ End Class
 Public Class ArrayLiteral
     Implements Expression '为了继承而继承
     Public Token As Token
-    Public Elements As List(Of Expression)
+    Public Elements As List(Of Expression) '存放所有表达式
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
     End Sub
@@ -125,13 +132,21 @@ Public Class ArrayLiteral
 
     Public Overrides Function ToString() As String Implements Expression.ToString
         Dim sb As New StringBuilder
+
+        '创建一个列表 存放所有表达式转成字符串后的结果
         Dim elements_ As New List(Of String)
+
+        '将所有的表达式转成字符串后存放至 elements_列表
         For Each el As Expression In Elements
             elements_.Add(el.ToString)
         Next
 
         sb.Append("[")
-        sb.Append(Strings.Join(Elements.ToArray, ", "))
+        sb.Append(
+            Strings.Join(
+                elements_.ToArray, ", "
+            )
+        )
         sb.Append("]")
 
 
@@ -170,7 +185,7 @@ End Class
 '布尔类型
 Public Class Bool
     Implements Expression '为了继承而继承
-    Public Token As Token ' token.IDENT 词法单元 
+    Public Token As Token
     Public Value As Boolean
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
@@ -190,7 +205,7 @@ End Class
 
 Public Class DimStatement
     Implements Statement
-    Public Token As Token ' TokenType | DIM_ 词法单元 
+    Public Token As Token ' DIM_ 词法单元 
     Public Name As Identifier '变量名
     Public Value As Expression '表达式 
 
@@ -205,6 +220,7 @@ Public Class DimStatement
     Public Overrides Function ToString() As String Implements Node.ToString
         '没啥好解释的
         '返回值大概是这样 Dim [变量名] = [表达式]
+        '或者 Dim [变量名]
 
         Dim sb As New StringBuilder
 
@@ -320,8 +336,8 @@ End Class
 Public Class PrefixExpression '前缀表达式 比如 !a ++a 
     Implements Expression
     Public Token As Token ' 前缀词法单元，如! 
-    Public Operator_ As String
-    Public Right As Expression
+    Public Operator_ As String '操作符
+    Public Right As Expression '右侧表达式
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -333,7 +349,7 @@ Public Class PrefixExpression '前缀表达式 比如 !a ++a
 
     Public Overrides Function ToString() As String Implements Expression.ToString
         '返回的大概字符串:
-        '([操作符][任意内容])
+        '([操作符][表达式])
 
         Dim sb As New StringBuilder
 
@@ -349,9 +365,9 @@ End Class
 Public Class InfixExpression '中缀表达式 比如 a / a
     Implements Expression
     Public Token As Token ' 中缀词法单元 如 + - * /
-    Public Operator_ As String
-    Public Right As Expression
-    Public Left As Expression
+    Public Operator_ As String '操作符
+    Public Right As Expression '右侧表达式
+    Public Left As Expression '左侧表达式
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -363,7 +379,7 @@ Public Class InfixExpression '中缀表达式 比如 a / a
 
     Public Overrides Function ToString() As String Implements Expression.ToString
         '返回的大概字符串:
-        '([任意内容] [操作符] [任意内容])
+        '([表达式] [操作符] [表达式])
 
         Dim sb As New StringBuilder
 
@@ -377,12 +393,44 @@ Public Class InfixExpression '中缀表达式 比如 a / a
     End Function
 End Class
 
-Public Class ForStatement
+Public Class ObjectMemberExpression '对象成员表达式 比如 a.value
+    Implements Expression
+    Public Token As Token ' DOT词法单元
+    Public Operator_ As String = "."
+    Public Right As Expression
+    Public Left As Expression
+
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Expression.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Expression.ToString
+        '返回的大概字符串:
+        '([表达式][.][表达式])
+
+        Dim sb As New StringBuilder
+
+        sb.Append("(")
+        sb.Append(Left.ToString())
+        sb.Append(Operator_)
+        sb.Append(Right.ToString().Replace(vbCr, ""))
+        sb.Append(")")
+
+        Return sb.ToString()
+    End Function
+End Class
+
+
+Public Class ForStatement 'For 语句
     Implements Statement
     Public Token As Token   'For 词法单元 
     Public ItemVar As Identifier '迭代变量
     Public Items As Expression '迭代变量
-    Public LoopBlock As BlockStatement '默认的块 
+    Public LoopBlock As BlockStatement '欲循环的块 
 
     Public Sub statementNode() Implements Statement.statementNode
         Throw New NotImplementedException()
@@ -408,10 +456,10 @@ Public Class ForStatement
     End Function
 End Class
 
-Public Class NotExpression
+Public Class NotExpression 'Not 表达式
     Implements Expression
-    Public Token As Token   'if'词法单元 
-    Public Right As Expression
+    Public Token As Token   ' BOOL_NOT 词法单元 
+    Public Right As Expression '右侧要取反的表达式
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -430,11 +478,11 @@ Public Class NotExpression
     End Function
 End Class
 
-Public Class AndExpression
+Public Class AndExpression ' And 表达式
     Implements Expression
-    Public Token As Token   ' And 词法单元 
-    Public Left As Expression
-    Public Right As Expression
+    Public Token As Token   ' BOOL_AND 词法单元 
+    Public Left As Expression '左侧进行与运算的表达式
+    Public Right As Expression '右侧进行与运算的表达式
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -453,11 +501,11 @@ Public Class AndExpression
     End Function
 End Class
 
-Public Class OrExpression
+Public Class OrExpression 'Or 表达式
     Implements Expression
-    Public Token As Token   'if'词法单元 
-    Public Left As Expression
-    Public Right As Expression
+    Public Token As Token   ' BOOL_OR 词法单元 
+    Public Left As Expression '左侧进行或运算的表达式
+    Public Right As Expression '右侧进行或运算的表达式
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -477,13 +525,13 @@ Public Class OrExpression
 End Class
 
 
-Public Class IfExpression
+Public Class IfExpression 'If 表达式
     Implements Expression
-    Public Token As Token   'if'词法单元 
+    Public Token As Token   'IF_ 词法单元 
     Public Condition As Expression
-    Public Consequence As BlockStatement '默认的块
-    Public Alternative As BlockStatement '其他条件的块
-    Public ElseIf_List As List(Of ElseIfExpression)
+    Public Consequence As BlockStatement 'If 表达式中默认要运行的块
+    Public Alternative As BlockStatement 'If 表达式中默认条件不满足时运行的块
+    Public ElseIf_List As List(Of ElseIfExpression) '存放所有ElseIf 表达式 的列表
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -509,11 +557,11 @@ Public Class IfExpression
     End Function
 End Class
 
-Public Class WhileStatement
+Public Class WhileStatement 'While 表达式
     Implements Statement
-    Public Token As Token   ' while词法单元 
-    Public LoopCondition As Expression
-    Public LoopBlock As BlockStatement '循环的块
+    Public Token As Token   'WHILE_ 词法单元 
+    Public LoopCondition As Expression '循环的条件
+    Public LoopBlock As BlockStatement '欲循环执行的代码
 
     Public Sub statementNode() Implements Statement.statementNode
         Throw New NotImplementedException()
@@ -537,11 +585,39 @@ Public Class WhileStatement
     End Function
 End Class
 
-Public Class AssignmentExpression
+Public Class ClassStatement '类语句
+    Implements Statement
+    Public Token As Token   'CLASS_ 词法单元 
+    Public Body As BlockStatement
+    Public Name As Identifier
+
+    Public Sub statementNode() Implements Statement.statementNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        Dim sb As New StringBuilder
+        sb.Append("class")
+        sb.Append(" ")
+        sb.Append(Name.ToString.Replace(vbCr, ""))
+        sb.Append(" ")
+        sb.Append(Body.ToString.Replace(vbCr, ""))
+        sb.Append(" ")
+        sb.Append("endclass")
+
+        Return sb.ToString
+    End Function
+End Class
+
+Public Class AssignmentExpression '复制表达式
     Implements Expression
-    Public Token As Token   ' ident词法单元 
-    Public Identifier As Identifier
-    Public Value As Expression '标识符的值
+    Public Token As Token
+    Public SetExp As Expression '欲设置的内容
+    Public Value As Expression '欲设置的值
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -553,7 +629,7 @@ Public Class AssignmentExpression
 
     Public Overrides Function ToString() As String Implements Node.ToString
         Dim sb As New StringBuilder
-        sb.Append(Identifier.ToString.Replace(vbCr, ""))
+        sb.Append(SetExp.ToString.Replace(vbCr, ""))
         sb.Append(" ")
         sb.Append("=")
         sb.Append(" ")
@@ -566,9 +642,9 @@ End Class
 
 Public Class ElseIfExpression
     Implements Expression
-    Public Token As Token   'elseif'词法单元 
-    Public Condition As Expression
-    Public Consequence As BlockStatement '默认的块
+    Public Token As Token   'ELSEIF_ 词法单元 
+    Public Condition As Expression '条件表达式
+    Public Consequence As BlockStatement '欲执行的块
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -587,48 +663,12 @@ Public Class ElseIfExpression
         Return sb.ToString
     End Function
 End Class
-'对象函数调用表达式
-Public Class ObjectCallExpression
-    Implements Expression
-    Public Token As Token
-    Public Obj As Expression
-    Public Func As Expression '// 标识符或函数字面量 
-    Public Arguments As List(Of Expression) '参数
-    Public Sub ExpressionNode() Implements Expression.ExpressionNode
-        Throw New NotImplementedException()
-    End Sub
-
-    Public Function TokenLiteral() As String Implements Node.TokenLiteral
-        Return Token.Value
-    End Function
-
-    Public Overrides Function ToString() As String Implements Node.ToString
-        '返回的大概内容:
-        '[函数名](参数1, 参数2 ....)
-
-        Dim sb As New StringBuilder
-
-        Dim args As New List(Of String)
-        For Each a As Expression In Arguments
-            args.Add(a.ToString)
-        Next
-
-
-        sb.Append(Obj.ToString)
-        sb.Append(".")
-        sb.Append(Func.ToString())
-        sb.Append("(")
-        sb.Append(Strings.Join(args.ToArray, ", "))
-        sb.Append(")")
-        Return sb.ToString
-    End Function
-End Class
 
 '对象函数创建表达式
 Public Class ObjectCreateExpression
     Implements Expression
-    Public Token As Token ' NEW 词法单元
-    Public ObjType As Expression
+    Public Token As Token 'NEW_ 词法单元
+    Public ObjType As Expression '要创建的类型 | 类
     Public Arguments As List(Of Expression) '对象创建的参数
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -660,11 +700,44 @@ Public Class ObjectCreateExpression
     End Function
 End Class
 
+
+'文件导入表达式
+Public Class FileImportExpression
+    Implements Expression
+    Public Token As Token ' Import 词法单元
+    Public FilePath As Expression ' 文件路径
+    Public AliasName As Expression '别名
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        '返回的大概内容:
+        'Import [路径] As [别名]
+
+        Dim sb As New StringBuilder
+
+        sb.Append("Import")
+        sb.Append(" ")
+        sb.Append($"""{FilePath.ToString}""")
+        sb.Append(" ")
+        sb.Append("As")
+        sb.Append(" ")
+        sb.Append(AliasName.ToString)
+
+        Return sb.ToString
+    End Function
+End Class
+
 '函数调用表达式
 Public Class CallExpression
     Implements Expression
     Public Token As Token
-    Public Func As Expression '// 标识符或函数字面量 
+    Public Func As Expression '标识符或函数字面量 
     Public Arguments As List(Of Expression) '参数
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -699,7 +772,7 @@ End Class
 Public Class BlockStatement
     Implements Statement
     Public Token As Token
-    Public Statements As List(Of Statement)
+    Public Statements As List(Of Statement) '存放所有语句的列表
 
     Public Sub statementNode() Implements Statement.statementNode
         Throw New NotImplementedException()
@@ -710,7 +783,7 @@ Public Class BlockStatement
     End Function
 
     Public Overrides Function ToString() As String Implements Node.ToString
-        '参考Program，类似的代码
+        '将块中所有的语句转换成字符串
 
         Dim sb As New StringBuilder
         For Each s As Statement In Statements
@@ -723,9 +796,9 @@ End Class
 
 Public Class FunctionLiteral
     Implements Expression
-    Public Token As Token ' func tokentype
-    Public Parameters As List(Of Identifier)
-    Public Body As BlockStatement
+    Public Token As Token 'Func 词法单元
+    Public Parameters As List(Of Identifier) '形参列表
+    Public Body As BlockStatement '函数里的 块
     Public Name As Identifier
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
@@ -740,12 +813,16 @@ Public Class FunctionLiteral
 
         Dim sb As New StringBuilder
 
+        '创建形参列表
         Dim params As New List(Of String)
+
+        '将 所有形参 转成字符串后添加至 形参列表
         For Each p In Parameters
             sb.Append(p.ToString)
         Next
 
-        sb.Append(TokenLiteral())
+
+        sb.Append("func")
         sb.Append("(")
 
         sb.Append(Strings.Join(params.ToArray, ","))
