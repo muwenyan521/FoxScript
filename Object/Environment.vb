@@ -3,7 +3,7 @@
     Public outer As Environment = Nothing '外层环境
 
     '获取一个名字的值 返回 一个有Object和Boolean的元组
-    Public Function GetValue(name As String) As Tuple(Of Object, Boolean)
+    Public Function GetValue(name As String) As ValueTuple(Of Object, Boolean)
         '...
         Dim n = name.Replace(vbCr, "").Replace(vbLf, "").Replace(" ", "")
 
@@ -16,7 +16,7 @@
             ok = True
             obj = store(n)
             '返回元组
-            Return New Tuple(Of Object, Boolean)(obj, ok)
+            Return New ValueTuple(Of Object, Boolean)(obj, ok)
         End If
 
         If outer IsNot Nothing Then
@@ -26,7 +26,7 @@
             End If
         End If
 
-        Return New Tuple(Of Object, Boolean)(obj, ok)
+        Return New ValueTuple(Of Object, Boolean)(obj, ok)
     End Function
 
     '设置指定名字的值，返回一个Fox_Object类型的对象
@@ -44,5 +44,6 @@
         End If
         Return val
     End Function
+
 End Class
 
