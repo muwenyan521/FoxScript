@@ -1,4 +1,5 @@
 ﻿Imports System.IO
+Imports System.Numerics
 
 Public Enum 优先级
     无意义
@@ -8,9 +9,9 @@ Public Enum 优先级
     SUM         '// + 
     PRODUCT    ' // * 
     PREFIX     ' // -X Or !X 
-    OBJ_CALL
     CALL_       ' // myFunction(X)
     INDEX '// array[index] 
+    OBJ_MEMBER ' person.Name
 End Enum
 
 Public Class Parser
@@ -51,6 +52,9 @@ Public Class Parser
 
         prefixParseFns.Add(TokenType.无意义, AddressOf 无意义)
         prefixParseFns.Add(TokenType.ILLEGAL, AddressOf 无意义)
+        infixParseFns.Add(TokenType.无意义, AddressOf 无意义)
+        infixParseFns.Add(TokenType.ILLEGAL, AddressOf 无意义)
+
         prefixParseFns.Add(TokenType.ENDFUNC, AddressOf 无意义)
         prefixParseFns.Add(TokenType.IN_, AddressOf 无意义)
 
@@ -60,13 +64,12 @@ Public Class Parser
         '注册前缀符
 
         prefixParseFns.Add(TokenType.IDENT, AddressOf parseIdentifier)
+        prefixParseFns.Add(TokenType.IMPORT, AddressOf parseFileImpprtExpression)
         prefixParseFns.Add(TokenType.NEW_, AddressOf parseObjectCreateExpression)
         prefixParseFns.Add(TokenType.LBRACE, AddressOf parseDictionaryLiteral)
         prefixParseFns.Add(TokenType.LBRACKET, AddressOf parseArrayLiteral)
         prefixParseFns.Add(TokenType.IF_, AddressOf parseIfExpression)
         prefixParseFns.Add(TokenType.BOOL_NOT, AddressOf parseNotExpression)
-        prefixParseFns.Add(TokenType.BOOL_AND, AddressOf parseAndExpression)
-        prefixParseFns.Add(TokenType.BOOL_OR, AddressOf parseOrExpression)
         prefixParseFns.Add(TokenType.INTNUMBER, AddressOf parseNumberLiteral)
         prefixParseFns.Add(TokenType.MINUS, AddressOf parsePrefixExpression)
         prefixParseFns.Add(TokenType.BANG, AddressOf parsePrefixExpression)
@@ -112,6 +115,34 @@ Public Class Parser
         stmt.LoopBlock = parseBlockStatement()
 
         If Not expectCur(TokenType.ENDWHILE) Then
+            Return Nothing
+        End If
+
+        Return stmt
+    End Function
+
+    '解析class语句
+    Public Function parseClassStatement() As Statement
+        '初始化
+        Dim stmt = New ClassStatement With {.Token = curToken}
+
+        '下一个Token
+        nextToken()
+
+        '解析表达式设置为类名
+        stmt.Name = parseExpression(优先级.LOWEST)
+
+        If Not expectPeek(TokenType.EOL) Then
+            Return Nothing
+        End If
+
+        '下一个Token
+        nextToken()
+
+        '解析代码块语句并设置为类的块
+        stmt.Body = parseBlockStatement()
+
+        If Not expectCur(TokenType.ENDCLASS) Then
             Return Nothing
         End If
 
@@ -179,51 +210,8 @@ Public Class Parser
 
         nextToken()
 
-        If peekTokenIs(TokenType.DOT) Then
-            Dim call_exp As New ObjectCallExpression With {.Token = curToken, .Obj = dict}
-
-            ' 读取点号并前进到下一个标记  
-            nextToken()
-            nextToken() ' 读取点号后的标记  
-
-            ' 解析表达式设置为标识符的值（即方法名或属性名）  
-            call_exp.Func = parseExpression(优先级.OBJ_CALL)
-
-            ' 解析方法参数（如果有）  
-            call_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-            ' 如果再次遇到点号，表示链式调用  
-            If peekTokenIs(TokenType.DOT) Then
-Dot:
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 创建一个新的对象调用表达式 
-                Dim chain_exp As New ObjectCallExpression With {.Token = curToken, .Obj = call_exp}
-
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 递归解析链式调用的下一部分  
-                chain_exp.Func = parseExpression(优先级.OBJ_CALL)
-                chain_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-                If peekTokenIs(TokenType.DOT) Then
-                    call_exp = chain_exp
-                    GoTo Dot
-                ElseIf Not peekTokenIs(TokenType.EOL) AndAlso Not peekTokenIs(TokenType.EOF) Then
-                    '对的 这里不需要代码 我也不知道为什么 加上上面的if条件就能生效
-                End If
-
-                ' 返回链式调用表达式  
-                Return chain_exp
-            End If
-
-            ' 返回对象调用表达式  
-            Return call_exp
-        End If
-
-        Return dict
+        Dim additionalExp = parseAdditionalExpressions(dict)
+        Return If(additionalExp IsNot Nothing, additionalExp, dict)
     End Function
 
     Public Function parseIndexExpression(left As Expression) As Expression
@@ -233,7 +221,9 @@ Dot:
         If Not expectPeek(TokenType.RBRACKET) Then
             Return Nothing
         End If
-        Return exp
+
+        Dim additionalExp = parseAdditionalExpressions(exp)
+        Return If(additionalExp IsNot Nothing, additionalExp, exp)
     End Function
 
     Public Function parseArrayLiteral() As Expression
@@ -241,55 +231,8 @@ Dot:
 
         array.Elements = parseExpressionList(TokenType.RBRACKET)
 
-        If peekTokenIs(TokenType.DOT) Then
-            Dim call_exp As New ObjectCallExpression With {.Token = curToken, .Obj = array}
-
-            ' 读取点号并前进到下一个标记  
-            nextToken()
-            nextToken() ' 读取点号后的标记  
-
-            ' 解析表达式设置为标识符的值（即方法名或属性名）  
-            call_exp.Func = parseExpression(优先级.OBJ_CALL)
-
-            ' 解析方法参数（如果有）  
-            call_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-            ' 如果再次遇到点号，表示链式调用  
-            If peekTokenIs(TokenType.DOT) Then
-Dot:
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 创建一个新的对象调用表达式 
-                Dim chain_exp As New ObjectCallExpression With {.Token = curToken, .Obj = call_exp}
-
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 递归解析链式调用的下一部分  
-                chain_exp.Func = parseExpression(优先级.OBJ_CALL)
-                chain_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-                If peekTokenIs(TokenType.DOT) Then
-                    call_exp = chain_exp
-                    GoTo Dot
-                ElseIf Not peekTokenIs(TokenType.EOL) AndAlso Not peekTokenIs(TokenType.EOF) Then
-                    '对的 这里不需要代码 我也不知道为什么 加上上面的if条件就能生效
-                End If
-
-                ' 返回链式调用表达式  
-                Return chain_exp
-            End If
-
-            ' 返回对象调用表达式  
-            Return call_exp
-        End If
-
-        If Not peekTokenIs(TokenType.EOL) AndAlso Not peekTokenIs(TokenType.EOF) Then
-            '对的 这里不需要代码 我也不知道为什么 加上上面的if条件就能生效
-        End If
-
-        Return array
+        Dim additionalExp = parseAdditionalExpressions(array)
+        Return If(additionalExp IsNot Nothing, additionalExp, array)
     End Function
 
     Public Function parseExpressionList(end_ As TokenType) As List(Of Expression)
@@ -328,51 +271,8 @@ Dot:
     Public Function parseStringLiteral() As Expression
         Dim StrExp = New StringLiteral With {.Token = curToken, .Value = curToken.Value}
 
-        If peekTokenIs(TokenType.DOT) Then
-            Dim call_exp As New ObjectCallExpression With {.Token = curToken, .Obj = StrExp}
-
-            ' 读取点号并前进到下一个标记  
-            nextToken()
-            nextToken() ' 读取点号后的标记  
-
-            ' 解析表达式设置为标识符的值（即方法名或属性名）  
-            call_exp.Func = parseExpression(优先级.OBJ_CALL)
-
-            ' 解析方法参数（如果有）  
-            call_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-            ' 如果再次遇到点号，表示链式调用  
-            If peekTokenIs(TokenType.DOT) Then
-Dot:
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 创建一个新的对象调用表达式 
-                Dim chain_exp As New ObjectCallExpression With {.Token = curToken, .Obj = call_exp}
-
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 递归解析链式调用的下一部分  
-                chain_exp.Func = parseExpression(优先级.OBJ_CALL)
-                chain_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-                If peekTokenIs(TokenType.DOT) Then
-                    call_exp = chain_exp
-                    GoTo Dot
-                ElseIf Not peekTokenIs(TokenType.EOL) AndAlso Not peekTokenIs(TokenType.EOF) Then
-                    '对的 这里不需要代码 我也不知道为什么 加上上面的if条件就能生效
-                End If
-
-                ' 返回链式调用表达式  
-                Return chain_exp
-            End If
-
-            ' 返回对象调用表达式  
-            Return call_exp
-        End If
-
-        Return StrExp
+        Dim additionalExp = parseAdditionalExpressions(StrExp)
+        Return If(additionalExp IsNot Nothing, additionalExp, StrExp)
     End Function
 
     '解析函数调用表达式
@@ -380,7 +280,8 @@ Dot:
         '创建一个函数调用表达式
         Dim exp = New CallExpression With {.Token = curToken, .Func = func, .Arguments = parseExpressionList(TokenType.RPAREN)}
 
-        Return exp
+        Dim additionalExp = parseAdditionalExpressions(exp)
+        Return If(additionalExp IsNot Nothing, additionalExp, exp)
     End Function
 
     '没啥意义
@@ -461,9 +362,8 @@ Dot:
         End If
 
 
-
-
-        Return Expression
+        Dim additionalExp = parseAdditionalExpressions(Expression)
+        Return If(additionalExp IsNot Nothing, additionalExp, Expression)
     End Function
 
     '解析not表达式  
@@ -477,47 +377,9 @@ Dot:
         '解析表达式并设置为右侧表达式
         Expression.Right = parseExpression(优先级.LOWEST)
 
-        Return Expression
+        Dim additionalExp = parseAdditionalExpressions(Expression)
+        Return If(additionalExp IsNot Nothing, additionalExp, Expression)
     End Function
-
-    Public Function parseAndExpression() As Expression
-        '初始化
-        Dim Expression = New AndExpression With {.Token = curToken}
-
-        '回退Token 
-        backToken()
-
-        '解析表达式并设置为右侧表达式
-        Expression.Left = parseExpression(优先级.LOWEST)
-
-        '下一个Token
-        nextToken()
-        nextToken()
-
-        Expression.Right = parseExpression(优先级.LOWEST)
-
-        Return Expression
-    End Function
-
-    Public Function parseOrExpression() As Expression
-        '初始化
-        Dim Expression = New OrExpression With {.Token = curToken}
-
-        '回退Token 
-        backToken()
-
-        '解析表达式并设置为右侧表达式
-        Expression.Left = parseExpression(优先级.LOWEST)
-
-        '下一个Token
-        nextToken()
-        nextToken()
-
-        Expression.Right = parseExpression(优先级.LOWEST)
-
-        Return Expression
-    End Function
-
 
 
     '解析elseif表达式  
@@ -565,6 +427,8 @@ Dot:
         '初始化
         Dim identifiers As New List(Of Identifier)
 
+        nextToken()
+
         '如果下一个Token是右括号
         If peekTokenIs(TokenType.RPAREN) Then
             '下一个Token
@@ -572,7 +436,10 @@ Dot:
 
             '返回
             Return identifiers
+        Else
+            backToken()
         End If
+
 
         '继续下一个Token
         nextToken()
@@ -619,7 +486,7 @@ Dot:
         '继续下一个Token
         nextToken()
 
-        While Not curTokenIs(TokenType.NEXT_) AndAlso Not curTokenIs(TokenType.ENDWHILE) AndAlso Not curTokenIs(TokenType.ENDFUNC) AndAlso Not curTokenIs(TokenType.ENDIF_) AndAlso Not curTokenIs(TokenType.ELSEIF_) AndAlso Not curTokenIs(TokenType.ELSE_) AndAlso Not curTokenIs(TokenType.EOF)
+        While Not curTokenIs(TokenType.NEXT_) AndAlso Not curTokenIs(TokenType.ENDWHILE) AndAlso Not curTokenIs(TokenType.ENDFUNC) AndAlso Not curTokenIs(TokenType.ENDIF_) AndAlso Not curTokenIs(TokenType.ELSEIF_) AndAlso Not curTokenIs(TokenType.ELSE_) AndAlso Not curTokenIs(TokenType.ENDCLASS) AndAlso Not curTokenIs(TokenType.EOF)
 
             '解析语句
             Dim stmt = parseStatement()
@@ -698,129 +565,100 @@ Dot:
         Return Expression
     End Function
 
-    '解析
-    Public Function parseObjectCreateExpression() As Expression
-        Dim exp = New ObjectCreateExpression With {.Token = curToken}
-
-        '前进到下一个词法单元
-        nextToken()
-
-        '解析表达式设置为 欲创建的对象类型
-        exp.ObjType = parseExpression(优先级.INDEX)
-        tknPos -= 1
-        curToken = tokens(tknPos)
-        peekToken = tokens(tknPos + 1)
-
-
-        '解析表达式列表设置为 创建对象时的实参
-        exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-        If peekTokenIs(TokenType.DOT) Then
-            Dim call_exp As New ObjectCallExpression With {.Token = curToken, .Obj = exp}
-
-            ' 读取点号并前进到下一个标记  
-            nextToken()
-            nextToken() ' 读取点号后的标记  
-
-            ' 解析表达式设置为标识符的值（即方法名或属性名）  
-            call_exp.Func = parseExpression(优先级.OBJ_CALL)
-
-            ' 解析方法参数（如果有）  
-            call_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-            ' 如果再次遇到点号，表示链式调用  
-            If peekTokenIs(TokenType.DOT) Then
-Dot:
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 创建一个新的对象调用表达式 
-                Dim chain_exp As New ObjectCallExpression With {.Token = curToken, .Obj = call_exp}
-
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 递归解析链式调用的下一部分  
-                chain_exp.Func = parseExpression(优先级.OBJ_CALL)
-                chain_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-                If peekTokenIs(TokenType.DOT) Then
-                    call_exp = chain_exp
-                    GoTo Dot
-                ElseIf Not peekTokenIs(TokenType.EOL) AndAlso Not peekTokenIs(TokenType.EOF) Then
-                    '对的 这里不需要代码 我也不知道为什么 加上上面的if条件就能生效
-                End If
-
-                ' 返回链式调用表达式  
-                Return chain_exp
-
-            End If
-
-            ' 返回对象调用表达式  
-            Return call_exp
-        ElseIf Not peekTokenIs(TokenType.EOL) AndAlso Not peekTokenIs(TokenType.EOF) Then
-            '对的 这里不需要代码 我也不知道为什么 加上上面的if条件就能生效
-        End If
-
-
-        Return exp
-    End Function
 
     '解析标识符
     Public Function parseIdentifier() As Expression
         Dim ident = New Identifier With {.Token = curToken, .Value = curToken.Value}
 
-        If peekTokenIs(TokenType.DOT) Then
-            Dim call_exp As New ObjectCallExpression With {.Token = curToken, .Obj = ident}
+        Dim additionalExp = parseAdditionalExpressions(ident)
+        Return If(additionalExp IsNot Nothing, additionalExp, ident)
 
-            ' 读取点号并前进到下一个标记  
-            nextToken()
-            nextToken() ' 读取点号后的标记  
+    End Function
 
-            ' 解析表达式设置为标识符的值（即方法名或属性名）  
-            call_exp.Func = parseExpression(优先级.OBJ_CALL)
 
-            ' 解析方法参数（如果有）  
-            call_exp.Arguments = parseExpressionList(TokenType.RPAREN)
+    '解析对象创建表达式
+    Public Function parseObjectCreateExpression() As Expression
+        Dim objectCreateExp = New ObjectCreateExpression With {.Token = curToken}
 
-            ' 如果再次遇到点号，表示链式调用  
-            If peekTokenIs(TokenType.DOT) Then
-Dot:
-                ' 前进到下一个词法单元
-                nextToken()
+        nextToken()
+        objectCreateExp.ObjType = parseExpression(优先级.OBJ_MEMBER)
 
-                ' 创建一个新的对象调用表达式 
-                Dim chain_exp As New ObjectCallExpression With {.Token = curToken, .Obj = call_exp}
+        nextToken()
+        objectCreateExp.Arguments = parseExpressionList(TokenType.RPAREN)
 
-                ' 前进到下一个词法单元
-                nextToken()
+        Dim additionalExp = parseAdditionalExpressions(objectCreateExp)
+        Return If(additionalExp IsNot Nothing, additionalExp, objectCreateExp)
 
-                ' 递归解析链式调用的下一部分  
-                chain_exp.Func = parseExpression(优先级.OBJ_CALL)
-                chain_exp.Arguments = parseExpressionList(TokenType.RPAREN)
+    End Function
 
-                If peekTokenIs(TokenType.DOT) Then
-                    call_exp = chain_exp
-                    GoTo Dot
-                ElseIf Not peekTokenIs(TokenType.EOL) AndAlso Not peekTokenIs(TokenType.EOF) Then
-                    '对的 这里不需要代码 我也不知道为什么 加上上面的if条件就能生效
-                End If
+    '解析文件导入表达式
+    Public Function parseFileImpprtExpression() As Expression
+        Dim fileImportExp = New FileImportExpression With {.Token = curToken}
 
-                ' 返回链式调用表达式  
-                Return chain_exp
-            End If
+        nextToken()
+        fileImportExp.FilePath = parseExpression(优先级.LOWEST)
 
-            ' 返回对象调用表达式  
-            Return call_exp
+        nextToken()
+        nextToken()
+        fileImportExp.AliasName = parseExpression(优先级.LOWEST)
+
+        Return fileImportExp
+    End Function
+
+
+
+    Public Function parseAdditionalExpressions(expression As Expression) As Expression
+        Dim currentExp As Expression = expression
+        Dim newExp As Expression
+
+        ' 尝试解析逻辑表达式
+        newExp = parseLogicalExpression(currentExp)
+        If newExp IsNot Nothing Then
+            currentExp = newExp
         End If
 
+        ' 尝试解析对象成员表达式
+ObjMemberParse:
+        newExp = parseObjectMemberExpression(currentExp)
+        If newExp IsNot Nothing Then
+            currentExp = newExp
+            GoTo ObjMemberParse
+        End If
+
+
+        newExp = parseAssignmentExpression(currentExp)
+        If newExp IsNot Nothing Then
+            currentExp = newExp
+        End If
+
+        Return currentExp
+    End Function
+
+    Public Function parseObjectMemberExpression(leftExp As Expression)
+        If peekTokenIs(TokenType.DOT) Then
+            Dim exp As New ObjectMemberExpression With {.Token = curToken}
+            exp.Left = leftExp
+
+            '下一个Token
+            nextToken()
+            nextToken()
+
+            exp.Right = New Identifier With {.Token = curToken, .Value = curToken.Value}
+
+            Return exp
+        End If
+
+        Return Nothing
+    End Function
+
+    Public Function parseAssignmentExpression(leftExp As Expression)
 
         If peekTokenIs(TokenType.ASSIGN) Then
 
             '下一个Token
             nextToken()
 
-            Dim exp As New AssignmentExpression With {.Token = curToken, .Identifier = ident}
+            Dim exp As New AssignmentExpression With {.Token = curToken, .SetExp = leftExp}
 
             '下一个Token
             nextToken()
@@ -836,148 +674,90 @@ Dot:
             Return exp
         End If
 
+        Return Nothing
+    End Function
 
+    Public Function parseLogicalExpression(leftExp As Expression)
+        If peekTokenIs(TokenType.BOOL_AND) Then
+            Dim andExp As New AndExpression With {.Token = peekToken, .Left = leftExp}
 
-        Return ident
+            '前进词法单元
+            nextToken()
+            nextToken()
+
+            Dim rightExp = parseExpression(优先级.LOWEST)
+            andExp.Right = rightExp
+
+            Return andExp
+        End If
+
+        If peekTokenIs(TokenType.BOOL_OR) Then
+            Dim orExp As New OrExpression With {.Token = peekToken, .Left = leftExp}
+
+            '前进词法单元
+            nextToken()
+            nextToken()
+
+            Dim rightExp = parseExpression(优先级.LOWEST)
+            orExp.Right = rightExp
+
+            Return orExp
+        End If
+
+        Return Nothing
     End Function
 
     '解析Bool表达式
     Public Function parseBoolean() As Expression
         Dim BoolExp = New Bool With {.Token = curToken, .Value = curTokenIs(TokenType.BOOL_TRUE)}
 
-        If peekTokenIs(TokenType.DOT) Then
-            Dim call_exp As New ObjectCallExpression With {.Token = curToken, .Obj = BoolExp}
-
-            ' 前进到下一个词法单元
-            nextToken()
-            nextToken()
-
-            ' 解析表达式设置为标识符的值（即方法名或属性名）  
-            call_exp.Func = parseExpression(优先级.OBJ_CALL)
-
-            ' 解析方法参数（如果有）  
-            call_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-            ' 如果再次遇到点号，表示链式调用  
-            If peekTokenIs(TokenType.DOT) Then
-Dot:
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 创建一个新的对象调用表达式 
-                Dim chain_exp As New ObjectCallExpression With {.Token = curToken, .Obj = call_exp}
-
-                ' 前进到下一个词法单元
-                nextToken()
-
-                ' 递归解析链式调用的下一部分  
-                chain_exp.Func = parseExpression(优先级.OBJ_CALL)
-                chain_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-                If peekTokenIs(TokenType.DOT) Then
-                    call_exp = chain_exp
-                    GoTo Dot
-                ElseIf Not peekTokenIs(TokenType.EOL) AndAlso Not peekTokenIs(TokenType.EOF) Then
-                    '对的 这里不需要代码 我也不知道为什么 加上上面的if条件就能生效
-                End If
-
-                ' 返回链式调用表达式  
-                Return chain_exp
-            End If
-
-            ' 返回对象调用表达式  
-            Return call_exp
-        End If
-
-        Return BoolExp
+        Dim additionalExp = parseAdditionalExpressions(BoolExp)
+        Return If(additionalExp IsNot Nothing, additionalExp, BoolExp)
     End Function
 
     '解析整数表达式
     Public Function parseNumberLiteral() As Expression
-        Dim lit As Object = New IntegerLiteral With {.Token = curToken, .Value = curToken.Value}
-        Dim value As Object = Nothing
+        Dim lit As Object = New IntegerLiteral With {.Token = curToken}
 
         If peekTokenIs(TokenType.DOT) Then
-
             Dim dbl_lit = New DoubleLiteral With {.Token = curToken}
             nextToken()
             nextToken()
 
             If curTokenIs(TokenType.INTNUMBER) Then
                 Dim dbl_str = $"{dbl_lit.Token.Value.ToString.Replace(vbCr, "")}.{curToken.Value.ToString.Replace(vbCr, "")}"
-                If Double.TryParse(dbl_str, value) Then
-                    dbl_lit.Value = value
-                    Return dbl_lit
-                Else
-                    Dim msg = $"could not parse {dbl_str} as integer".Replace(vbCr, "")
-                    Dim msg_cn = $"无法转换数值为小数 , 数值:{dbl_str}"
-                    Console.WriteLine(msg)
-                    Console.WriteLine(msg_cn)
 
-                    errors.Add(msg)
-                    errors.Add(msg_cn)
-                    Return Nothing
-                End If
-            ElseIf curTokenIs(TokenType.IDENT) Then
-                Dim call_exp As New ObjectCallExpression With {.Token = curToken, .Obj = lit}
-
-                ' 解析表达式设置为标识符的值（即方法名或属性名）  
-                call_exp.Func = parseExpression(优先级.OBJ_CALL)
-
-                ' 解析方法参数（如果有）  
-                call_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-                ' 如果再次遇到点号，表示链式调用  
-                If peekTokenIs(TokenType.DOT) Then
-Dot:
-                    ' 前进到下一个词法单元
-                    nextToken()
-
-                    ' 创建一个新的对象调用表达式 
-                    Dim chain_exp As New ObjectCallExpression With {.Token = curToken, .Obj = call_exp}
-
-                    ' 前进到下一个词法单元
-                    nextToken()
-
-                    ' 递归解析链式调用的下一部分  
-                    chain_exp.Func = parseExpression(优先级.OBJ_CALL)
-                    chain_exp.Arguments = parseExpressionList(TokenType.RPAREN)
-
-                    If peekTokenIs(TokenType.DOT) Then
-                        call_exp = chain_exp
-                        GoTo Dot
-                    ElseIf Not peekTokenIs(TokenType.EOL) AndAlso Not peekTokenIs(TokenType.EOF) Then
-                        '对的 这里不需要代码 我也不知道为什么 加上上面的if条件就能生效
+                Try
+                    dbl_lit.Value = CDec(dbl_str)
+                Catch err As Exception
+                    Dim message = $"无法转换数值为小数, 数值: {CStr(curToken.Value)}"
+                    If NumberError.ErrorDictionary.ContainsKey(err.GetType) Then
+                        message = $"无法转换数值为小数, 因为""{NumberError.ErrorDictionary(err.GetType())}"" 数值: {CStr(curToken.Value)}"
                     End If
+                    errors.Add(message)
 
-                    ' 返回链式调用表达式  
-                    Return chain_exp
-                End If
-
-                ' 返回对象调用表达式  
-                Return call_exp
-
-                Return Nothing
-
-
-            Else
-                '尝试转换，失败就报错
-                If Long.TryParse(curToken.Value.ToString.Replace(vbCr, ""), value) Then
-                    lit.Value = value
-                    Return lit
-                Else
-                    Dim msg = $"could not parse {CStr(curToken.Value)} as integer".Replace(vbCr, "")
-                    Dim msg_cn = $"无法转换数值为整数 , 数值:{CStr(curToken.Value)}"
-                    Console.WriteLine(msg)
-                    Console.WriteLine(msg_cn)
-                    errors.Add(msg)
-                    errors.Add(msg_cn)
                     Return Nothing
-                End If
+                End Try
+
+                Dim double_additionalExp = parseAdditionalExpressions(dbl_lit)
+                Return If(double_additionalExp IsNot Nothing, double_additionalExp, dbl_lit)
             End If
         End If
 
-        Return lit
+        Try
+            lit.Value = BigInteger.Parse(curToken.Value.ToString.Replace(vbCr, ""))
+        Catch err As Exception
+            Dim message = $"无法转换数值为整数, 数值: {CStr(curToken.Value)}"
+            If NumberError.ErrorDictionary.ContainsKey(err.GetType) Then
+                message = $"无法转换数值为整数, 因为""{NumberError.ErrorDictionary(err.GetType())}"" 数值: {CStr(curToken.Value)}"
+            End If
+            errors.Add(message)
+
+            Return Nothing
+        End Try
+
+        Dim additionalExp = parseAdditionalExpressions(lit)
+        Return If(additionalExp IsNot Nothing, additionalExp, lit)
     End Function
 
     '...
@@ -1024,13 +804,14 @@ Dot:
             '继续下一个Token
             nextToken()
         End While
+
         Return program
     End Function
 
     '解析语句 返回一个 Statement 类型的 对象
     Public Function parseStatement() As Statement
         Select Case curToken.TokenType
-            Case TokenType.DIM_ 'dim语句
+            Case TokenType.DIM_, TokenType.LET_ 'dim语句
                 Return parseDimStatement() '解析dim语句
             Case TokenType.RETURN_ 'return 语句
                 Return parseReturnStatement() '解析return语句
@@ -1038,6 +819,8 @@ Dot:
                 Return parseForStatement()
             Case TokenType.WHILE_
                 Return parseWhileStatement()
+            Case TokenType.CLASS_
+                Return parseClassStatement()
             Case TokenType.EOL 'EOL 没啥大用
                 Return New EOLStatement With {.Token = curToken}
             Case Else '都不是
@@ -1052,38 +835,34 @@ Dot:
 
     Public Sub noPrefixParseFnError(tkn As TokenType)
         Dim msg = $"no prefix parse Function For {tkn.ToString} found"
-        Console.WriteLine(msg)
+        'Console.WriteLine(msg)
     End Sub
 
     '探查错误
     Public Sub peekError(tkn As TokenType)
-        Dim msg = $"expected next token to be {tkn}, got {peekToken.TokenType} instead ."
         Dim msg_cn = $"错误！ 下一个Token应为 {tkn}, 但却是 {peekToken.TokenType},{vbCrLf}内容:{peekToken.Value.ToString}"
-        Console.WriteLine(msg)
-        Console.WriteLine(msg_cn)
-        errors.Add(msg)
         errors.Add(msg_cn)
     End Sub
 
     Public Sub curError(tkn As TokenType)
-        Dim msg = $"expected next token to be {tkn}, got {curToken.TokenType} instead ."
         Dim msg_cn = $"错误！ 当前Token应为 {tkn}, 但却是 {curToken.TokenType},{vbCrLf}内容:{curToken.Value.ToString}"
-        Console.WriteLine(msg)
-        Console.WriteLine(msg_cn)
-        errors.Add(msg)
         errors.Add(msg_cn)
     End Sub
 
-    '没用上，有机会看看在哪里用
-    Public Sub checkParserErrors()
+
+    Public Function checkParserErrors() As Boolean
+
         If errors.Count = 0 Then
-            Return
+            Return False '无错误 返回False
         End If
         Console.WriteLine($"parser has {errors.Count} errors")
         For Each err As String In errors
             Console.WriteLine($"parser error:{err}")
         Next
-    End Sub
+
+        '有错误，返回True
+        Return True
+    End Function
 
     '解析表达式语句
     Public Function parseExpressionStatement() As ExpressionStatement
@@ -1131,22 +910,41 @@ Dot:
             .Token = curToken
         }
 
+        Dim IsReadOnly = False
+
+        If peekTokenIs(TokenType.READONLY_) Then
+            IsReadOnly = True
+            nextToken()
+        End If
+
         '检查TokenType是否为Ident （标识符）
         If Not expectPeek(TokenType.IDENT) Then
             Return Nothing '返回空
         End If
 
         '设置变量名为 一个Identifier类型的对象
-        stmt.Name = New Identifier With {.Token = curToken, .Value = curToken.Value}
+        stmt.Name = New Identifier With {.Token = curToken, .Value = curToken.Value, .IsReadOnly = IsReadOnly}
 
         '检查TokenType是否为ASSIGN （等于号）
-        If Not expectPeek(TokenType.ASSIGN) Then
-            Return Nothing
+        If peekTokenIs(TokenType.ASSIGN) Then
+            nextToken()
+            nextToken()
+
+            ' 解析赋值表达式的右侧部分
+            stmt.Value = parseExpression(优先级.LOWEST)
+
+        Else
+            stmt.Value = New CallExpression With {
+                .Func = New Identifier With {.Value = "CNothing"},
+                .Arguments = New List(Of Expression) From {
+                    New IntegerLiteral With {.Value = New BigInteger(0)}
+                },
+                .Token = curToken
+            }
+
+            nextToken()
         End If
 
-        nextToken()
-        ' 解析赋值表达式的右侧部分
-        stmt.Value = parseExpression(优先级.LOWEST)
         ' 检查是否以换行符结束声明
         If peekTokenIs(TokenType.EOL) Then
             nextToken()
