@@ -1,0 +1,13 @@
+Class Console
+	Func WriteLine(val)
+		print(val)
+	EndFunc
+
+	Func ReadLine(val)
+		return input(val)
+	EndFunc
+
+	Func Clear()
+		clear()
+	EndFunc
+EndClass
