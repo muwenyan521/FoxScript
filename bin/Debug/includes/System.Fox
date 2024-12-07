@@ -1,7 +1,7 @@
 Class Array
 	Dim Value = []
 	Func Add(val)
-		Me.Value += [val]
+		Me.Value = Me.Value + [val]
 	EndFunc
 
 	Func Clear()
@@ -11,11 +11,37 @@ Class Array
 	Func New(list)
 		Me.Value = list
 	EndFunc
+
+	Func Filter(filterFunction)
+		dim new_list = []
+		dim filterFunctionResult
+		for item in Me.Value
+			filterFunctionResult = filterFunction(item)
+			if filterFunctionResult <> Nothing then
+				new_list = new_list + [filterFunctionResult]
+			endif
+		next
+
+		return new_list
+	EndFunc
+
+	Func Count()
+		return len(Me.Value)
+	EndFunc
 EndClass
 
 Class String
 	Dim Empty = ""
+	Dim Value = Nothing
 	Func IsEmpty(Text)
-		Return Text == "" 
+		Return Text == Me.Empty
+	EndFunc
+
+	Func Count()
+		if Value == Nothing then
+			return 0
+		endif
+			
+		return len(Value)
 	EndFunc
 EndClass
