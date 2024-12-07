@@ -2,6 +2,8 @@
 ~~一坨屎山~~  
 一个编程语言，目前正在添加对面向对象的支持  
 本项目使用了vb.net编程语言制作  
+## 为什么会制作这个项目？
+闲的
 ## Requirements - 依赖环境
 Windows 7+ （包括Windows 7）  
 .Net Freamework 4.7.2  
