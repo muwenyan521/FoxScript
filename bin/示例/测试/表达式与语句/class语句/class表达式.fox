@@ -1,6 +1,6 @@
 Class Console 
 	func WriteLine(val)
-		' 传递一个参数，输出该参数的值，无返回值
+		'传递一个参数，输出该参数的值，无返回值
 
 		'使用内置函数输出值
 		print(val)
