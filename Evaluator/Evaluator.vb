@@ -145,7 +145,7 @@ Public Class Evaluator
 
                 '返回一个 Fox_Array 对象
                 Return New Fox_Array With {.Elements = elements}
-            Case GetType(IndexExpression）
+            Case GetType(IndexExpression)
                 Dim Left = eval(node.Left, env)
                 If isError(Left) Then
                     Return Left

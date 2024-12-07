@@ -56,6 +56,7 @@ Public Class Parser
         infixParseFns.Add(TokenType.ILLEGAL, AddressOf 无意义)
 
         prefixParseFns.Add(TokenType.ENDFUNC, AddressOf 无意义)
+        prefixParseFns.Add(TokenType.ENDIF_, AddressOf 无意义)
         prefixParseFns.Add(TokenType.IN_, AddressOf 无意义)
 
         '获取所有Token
@@ -182,6 +183,10 @@ Public Class Parser
 
         '解析代码块语句并设置为 循环块
         stmt.LoopBlock = parseBlockStatement()
+        
+        If Not expectCur(TokenType.NEXT_) Then
+            Return Nothing
+        End If
 
         Return stmt
     End Function
