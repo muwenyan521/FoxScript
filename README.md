@@ -11,3 +11,6 @@ Windows 7+ （包括Windows 7）
 ## Chat Group - 聊天群
 QQ: 195157587  
 Discord: https://discord.gg/zw8yCfDYCS
+## 鸣谢
+感谢《用Go语言自制解释器》的作者 索斯藤·鲍尔 （Thorsten Ball ）
+如果不是这本书我还不一定会写编程语言
