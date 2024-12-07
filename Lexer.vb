@@ -3,7 +3,7 @@
     Private _pos As Integer = 0 ' 当前分析的位置
     Private _nextPos As Integer = 0 ' 下一个分析的位置
     Public _readingChar As Char  '当前读取的字符
-    Private invaild_chars As New List(Of Char)
+    Private invaild_chars As New List(Of String)
 
     ' Lexer构造函数，初始化文本和位置
     Public Sub New(text As String)
@@ -12,10 +12,7 @@
         _pos = 0
 
         Dim chars = Token.TokenTypeDict.Keys.Where(Function(item As String) item.Count = 1).ToList
-
-        For Each TokenTypeChar As String In chars
-            invaild_chars.Add(TokenTypeChar)
-        Next
+        invaild_chars = chars
 
         '这里得readChar一下，不然报空异常就老实了
         readChar()
