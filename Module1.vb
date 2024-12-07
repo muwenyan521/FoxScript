@@ -85,7 +85,8 @@ Public Class Runner
             {TokenType.IF_, TokenType.ENDIF_},
             {TokenType.WHILE_, TokenType.ENDWHILE},
             {TokenType.FOR_, TokenType.NEXT_},
-            {TokenType.FUNC, TokenType.ENDFUNC}
+            {TokenType.FUNC, TokenType.ENDFUNC},
+            {TokenType.CLASS_, TokenType.ENDCLASS}
         }
 
         For Each Start_TokenType As TokenType In MultiLine_TokenType_Dictionary.Keys
