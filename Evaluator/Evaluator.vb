@@ -1,11 +1,12 @@
 ﻿Imports System.Numerics
+Imports System.Windows.Forms
 
 Public Class Evaluator
     Public Shared Fox_True As Fox_Bool = New Fox_Bool() With {.Value = True}
     Public Shared Fox_False As Fox_Bool = New Fox_Bool() With {.Value = False}
     Public Shared Fox_Nothing As Fox_Nothing = New Fox_Nothing()
-    Public Fox_One As Fox_Integer = New Fox_Integer() With {.Value = 1}
-    Public Fox_Zero As Fox_Integer = New Fox_Integer() With {.Value = 0}
+    Public Shared Fox_One As Fox_Integer = New Fox_Integer() With {.Value = 1}
+    Public Shared Fox_Zero As Fox_Integer = New Fox_Integer() With {.Value = 0}
 
     '判断是否为Error对象. 返回一个布尔值
     Public Function isError(obj As Fox_Object)
@@ -206,12 +207,6 @@ Public Class Evaluator
                     r.Inspect()
                 End While
             Case GetType(AssignmentExpression)
-                '对欲设置的表达式进行求值
-                Dim val = eval(node.Value, env)
-
-                '检查是否为错误对象
-                If isError(val) Then Return val
-
                 Dim assignmentExp = TryCast(node, AssignmentExpression)
                 Dim value = evalAssignmentExpression(assignmentExp.SetExp, node.Value, env)
 
@@ -330,48 +325,27 @@ Public Class Evaluator
                 Return evalObjectMemberExpression(leftObj, objMemberExp.Right, env)
             Case GetType(ObjectCreateExpression)
                 Dim objCreateExp = TryCast(node, ObjectCreateExpression)
-                Dim className = objCreateExp.ObjType.ToString.Replace("(", "").Replace(")", "")
 
-                Dim value As ValueTuple(Of Fox_Class, Boolean) = Nothing
+                Dim r = eval(objCreateExp.ObjType, env)
+                If isError(r) Then Return r
 
-                If className.Contains(".") Then
-                    Dim r = eval(New ObjectMemberExpression With {.Left = New Identifier With {.Value = className.Split(".")(0)}, .Right = New Identifier With {.Value = className.Split(".")(1)}}, env)
-                    If isError(r) Then Return r
+                Dim classObj As Fox_Class = r
+                Dim newObj = New Fox_Class With {.Body = classObj.Body, .Env = New Environment, .Name = classObj.Name, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments}
 
-                    Dim classObj As Fox_Class = r
-                    Dim newObj = New Fox_Class With {.Body = classObj.Body, .Env = New Environment, .Name = classObj.Name, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments}
+                eval(newObj.Body, newObj.Env)
+                newObj.Env.SetValue("Me", newObj)
 
-                    eval(newObj.Body, newObj.Env)
-
-                    If newObj.CreateFunc IsNot Nothing Then
-                        eval(New CallExpression With
-                             {
-                                .Arguments = newObj.CreateArgs,
-                                .Func = New Identifier With {.Value = "New"}
-                             },
-                             newObj.Env
-                        )
-                    End If
-
-                    Return newObj
-                Else
-                    value = env.GetValue(className)
-
-                    If Not value.Item2 Then
-                        Return ThrowError($"找不到类 {className}")
-                    End If
-                    Dim classObj As Fox_Class = value.Item1
-                    Dim newObj = New Fox_Class With {.Body = classObj.Body, .Env = New Environment, .Name = classObj.Name, .CreateFunc = classObj.CreateFunc}
-
-                    If newObj.CreateFunc IsNot Nothing Then
-                        eval(newObj.Body, newObj.Env)
-
-                        eval(newObj.CreateFunc, newObj.Env)
-                    End If
-
-                    Return newObj
+                If newObj.CreateFunc IsNot Nothing Then
+                    eval(New CallExpression With
+                         {
+                            .Arguments = newObj.CreateArgs,
+                            .Func = newObj.CreateFunc.Name
+                         },
+                         newObj.Env
+                    )
                 End If
 
+                Return newObj
             Case GetType(FileImportExpression)
                 Dim fileImportExp = TryCast(node, FileImportExpression)
                 Dim className = fileImportExp.AliasName.ToString.Replace("(", "").Replace(")", "")
@@ -661,25 +635,23 @@ Public Class Evaluator
     ) As Environment
         Dim env = New Environment With {.outer = func.Env}
 
-        Dim Get_ClassObj = env.outer.GetValue("Me")
-        If Get_ClassObj.Item2 Then
-            env.SetValue("Me", Get_ClassObj.Item1)
-        End If
+        Dim class_functioncall = env.outer.GetValue("Me")
 
         If func.Parameters Is Nothing Then Return env
+
+        If args.Count > func.Parameters.Count Then
+            env.SetValue(func.Parameters(0).Value, ThrowError($"实参数量超过形参"))
+            Return env
+        ElseIf args.Count < func.Parameters.Count Then
+            env.SetValue(func.Parameters(0).Value, ThrowError($"形参数量超过实参"))
+            Return env
+        End If
+
         For parmaIndex = 0 To func.Parameters.Count - 1
-            'If args.Count = func.Parameters.Count Then
             env.SetValue(func.Parameters(parmaIndex).Value, args(parmaIndex))
-            'ElseIf args.Count > func.Parameters.Count Then
-            '    env.SetValue(func.Parameters(parmaIndex).Value, ThrowError($"实参数量超过形参"))
-            'ElseIf args.Count < func.Parameters.Count Then
-            '    env.SetValue(func.Parameters(parmaIndex).Value, ThrowError($"形参数量超过实参"))
-            'End If
         Next
 
-        If Get_ClassObj.Item2 Then
-            'func.Env.SetValue("Me", env.GetValue("Me").Item1)
-            func.Env = env.GetValue("Me").Item1.Env
+        If class_functioncall.Item2 Then
         End If
 
         Return env
@@ -842,6 +814,9 @@ Public Class Evaluator
             End If
         End If
 
+        If isError(Left) Then Return Left
+        If isError(Right) Then Return Right
+
         Return Nothing
     End Function
 
@@ -898,6 +873,8 @@ Public Class Evaluator
                 Return Builtins.builtinFuncs("CBool").BuiltinFunction
             Case ObjectType.STRING_OBJ
                 Return Builtins.builtinFuncs("CStr").BuiltinFunction
+            Case ObjectType.ARRAY_OBJ
+                Return Builtins.builtinFuncs("CArray").BuiltinFunction
             Case ObjectType.NOTHINGL_OBJ
                 Return GetType_ConvertHandlers(rightType, rightType)
             Case Else
@@ -1061,10 +1038,10 @@ Public Class Evaluator
 
     '求整数值
     Public Function evalIntegerInfixExpression(
-    operator_ As String, '操作符
-    Left As Fox_Object, '操作符左边的对象
-    Right As Fox_Object ' 操作符右边的对象
-) As Fox_Object
+        operator_ As String, '操作符
+        Left As Fox_Object, '操作符左边的对象
+        Right As Fox_Object ' 操作符右边的对象
+    ) As Fox_Object
 
         '判空
         Dim result = CheckObject(operator_, Left, Right)
@@ -1073,6 +1050,8 @@ Public Class Evaluator
         '尝试转换对象为Fox_Integer类型并获取数值
         Dim leftVal = TryCast(Left, Fox_Integer).Value
         Dim rightVal = TryCast(Right, Fox_Integer).Value
+
+
 
         '判断操作符并新建对应对象
         Select Case operator_
@@ -1169,15 +1148,19 @@ Public Class Evaluator
     End Function
 
     Public Function evalMinusPrefixOperatorExpression(Right As Fox_Object) As Fox_Object
-        If Right.Type() = ObjectType.INTEGER_OBJ Then '如果是Integer类型
-            Dim value = TryCast(Right, Fox_Integer).Value '获取数值
-            Return New Fox_Integer With {.Value = -value} '新建对象
-        ElseIf Right.Type = ObjectType.BOOL_OBJ Then '如果是Bool类型
-            Dim value = TryCast(Right, Fox_Bool).Value '获取Bool值
+        Select Case Right.Type
+            Case ObjectType.INTEGER_OBJ
+                Dim value As BigInteger = TryCast(Right, Fox_Integer).Value '获取数值
+                Return New Fox_Integer With {.Value = -value} '新建对象并返回
+            Case ObjectType.DOUBLE_OBJ
+                Dim value As Decimal = TryCast(Right, Fox_Double).Value '获取数值
+                Return New Fox_Double With {.Value = -value} '新建对象并返回
+            Case ObjectType.BOOL_OBJ
+                Dim value = TryCast(Right, Fox_Bool).Value '获取Bool值
 
-            '为什么boolean转long会变成负数啊...
-            Return New Fox_Integer With {.Value = BoolToLong(0) + BoolToLong(value)}
-        End If
+                '为什么boolean转long会变成负数啊...
+                Return New Fox_Integer With {.Value = BoolToLong(0) + BoolToLong(value)}
+        End Select
 
         Return Fox_Nothing
     End Function
