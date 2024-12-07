@@ -41,10 +41,10 @@ Public Class Builtins
                                                              End If
 
                                                              If args.Count = 所需实参数 Then
-                                                                 Select Case args(0).GetType()
-                                                                     Case GetType(Fox_String)
+                                                                 Select Case args(0).Type()
+                                                                     Case ObjectType.STRING_OBJ
                                                                          Return New Fox_Integer With {.Value = CLng(args(0).Value.ToString.Count)}
-                                                                     Case GetType(Fox_Array)
+                                                                     Case ObjectType.ARRAY_OBJ
                                                                          Return New Fox_Integer With {.Value = CLng(TryCast(args(0), Fox_Array).Elements.Count)}
                                                                      Case Else
                                                                          Return Evaluator.ThrowError($"len函数不支持{args(0).Type()}类型")
@@ -140,14 +140,14 @@ Public Class Builtins
                                                                   Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
                                                               If args.Count = 所需实参数 Then
-                                                                  Select Case args(0).GetType()
-                                                                      Case GetType(Fox_Integer)
+                                                                  Select Case args(0).Type()
+                                                                      Case ObjectType.INTEGER_OBJ
                                                                           Return New Fox_Double With {.Value = CDbl(CLng(args(0).Value.ToString()))}
-                                                                      Case GetType(Fox_Double)
+                                                                      Case ObjectType.DOUBLE_OBJ
                                                                           Return args(0)
-                                                                      Case GetType(Fox_Bool)
+                                                                      Case ObjectType.BOOL_OBJ
                                                                           Return New Fox_Double With {.Value = CDbl(Evaluator.BoolToLong(args(0).Value))}
-                                                                      Case GetType(Fox_String)
+                                                                      Case ObjectType.STRING_OBJ
                                                                           Dim strObj = TryCast(args(0), Fox_String)
                                                                           Dim r = Nothing
                                                                           If Decimal.TryParse(strObj.Value, r) Then
@@ -155,6 +155,8 @@ Public Class Builtins
                                                                           Else
                                                                               Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为整数")
                                                                           End If
+                                                                      Case ObjectType.NOTHINGL_OBJ
+                                                                          Return New Fox_Double With {.Value = 0.0}
                                                                       Case Else
                                                                           Return Evaluator.ThrowError($"CDbl函数不支持{args(0).Type()}类型")
                                                                   End Select
@@ -174,14 +176,15 @@ Public Class Builtins
                                                               End If
 
                                                               If args.Count = 所需实参数 Then
-                                                                  Select Case args(0).GetType()
-                                                                      Case GetType(Fox_Integer)
+                                                                  Select Case args(0).Type()
+                                                                      Case ObjectType.INTEGER_OBJ
                                                                           Return args(0)
-                                                                      Case GetType(Fox_Double)
+                                                                      Case ObjectType.DOUBLE_OBJ
                                                                           Return New Fox_Integer With {.Value = New BigInteger(CLng(args(0).Value))}
-                                                                      Case GetType(Fox_Bool)
+                                                                      Case ObjectType.BOOL_OBJ
                                                                           Return New Fox_Integer With {.Value = Evaluator.BoolToLong(args(0).Value)}
-                                                                      Case GetType(Fox_String)
+
+                                                                      Case ObjectType.STRING_OBJ
                                                                           Dim strObj = TryCast(args(0), Fox_String)
                                                                           Dim r = Nothing
                                                                           If Long.TryParse(strObj.Value, r) Then
@@ -189,6 +192,8 @@ Public Class Builtins
                                                                           Else
                                                                               Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为整数")
                                                                           End If
+                                                                      Case ObjectType.NOTHINGL_OBJ
+                                                                          Return Evaluator.Fox_Zero
                                                                       Case Else
                                                                           Return Evaluator.ThrowError($"CInt函数不支持{args(0).Type()}类型")
                                                                   End Select
@@ -242,14 +247,14 @@ Public Class Builtins
                                                               End If
 
                                                               If args.Count = 所需实参数 Then
-                                                                  Select Case args(0).GetType()
-                                                                      Case GetType(Fox_Integer), GetType(Fox_Double)
+                                                                  Select Case args(0).Type()
+                                                                      Case ObjectType.INTEGER_OBJ, ObjectType.DOUBLE_OBJ
                                                                           Return New Fox_String With {.Value = args(0).Value.ToString}
-                                                                      Case GetType(Fox_Bool)
+                                                                      Case ObjectType.BOOL_OBJ
                                                                           Return New Fox_String With {.Value = CStr(args(0).Value)}
-                                                                      Case GetType(Fox_String)
+                                                                      Case ObjectType.STRING_OBJ
                                                                           Return args(0)
-                                                                      Case GetType(Fox_Nothing)
+                                                                      Case ObjectType.NOTHINGL_OBJ
                                                                           Return New Fox_String With {.Value = ""}
                                                                       Case Else
                                                                           Return Evaluator.ThrowError($"CStr函数不支持{args(0).Type()}类型")
@@ -270,8 +275,8 @@ Public Class Builtins
                                                                 End If
 
                                                                 If args.Count = 所需实参数 Then
-                                                                    Select Case args(0).GetType()
-                                                                        Case GetType(Fox_String)
+                                                                    Select Case args(0).Type()
+                                                                        Case ObjectType.STRING_OBJ
                                                                             Dim stringObject = TryCast(args(0), Fox_String)
                                                                             Dim stringList = stringObject.Value.ToList
 
@@ -281,8 +286,10 @@ Public Class Builtins
                                                                             Next
 
                                                                             Return arrayObject
-                                                                        Case GetType(Fox_Array)
+                                                                        Case ObjectType.ARRAY_OBJ
                                                                             Return args(0)
+                                                                        Case ObjectType.NOTHINGL_OBJ
+                                                                            Return New Fox_Array With {.Elements = New List(Of Fox_Object)}
                                                                         Case Else
                                                                             Return Evaluator.ThrowError($"CStr函数不支持{args(0).Type()}类型")
                                                                     End Select
@@ -302,8 +309,8 @@ Public Class Builtins
                                                                End If
 
                                                                If args.Count = 所需实参数 Then
-                                                                   Select Case args(0).GetType()
-                                                                       Case GetType(Fox_Integer)
+                                                                   Select Case args(0).Type()
+                                                                       Case ObjectType.INTEGER_OBJ
                                                                            Dim arr = New Fox_Array With {.Elements = New List(Of Fox_Object)}
                                                                            Try
                                                                                For i = 0 To args(0).Value
@@ -332,8 +339,8 @@ Public Class Builtins
                                                                     End If
 
                                                                     If args.Count = 所需实参数 Then
-                                                                        Select Case args(0).GetType()
-                                                                            Case GetType(Fox_Array)
+                                                                        Select Case args(0).Type()
+                                                                            Case ObjectType.ARRAY_OBJ
                                                                                 Dim arr = TryCast(args(0), Fox_Array)
                                                                                 Dim numbers As New List(Of Long)
 
@@ -381,8 +388,8 @@ Public Class Builtins
                                                              End If
 
                                                              If args.Count = 所需实参数 Then
-                                                                 Select Case args(0).GetType()
-                                                                     Case GetType(Fox_Integer)
+                                                                 Select Case args(0).Type()
+                                                                     Case ObjectType.STRING_OBJ
                                                                          Return New Fox_String With {.Value = Chr(CLng(args(0).Value.ToString))}
                                                                      Case Else
                                                                          Return Evaluator.ThrowError($"BubbleSort函数不支持{args(0).Type()}类型")
@@ -403,8 +410,8 @@ Public Class Builtins
                                                               End If
 
                                                               If args.Count = 所需实参数 Then
-                                                                  Select Case args(0).GetType()
-                                                                      Case GetType(Fox_Integer)
+                                                                  Select Case args(0).Type()
+                                                                      Case ObjectType.STRING_OBJ
                                                                           Return New Fox_String With {.Value = ChrW(CLng(args(0).Value.ToString))}
                                                                       Case Else
                                                                           Return Evaluator.ThrowError($"BubbleSort函数不支持{args(0).Type()}类型")
