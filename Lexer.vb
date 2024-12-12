@@ -1,9 +1,10 @@
 ﻿Public Class Lexer
-    Private _code As String ' 要分析的文本
+    Private ReadOnly _code As String ' 要分析的文本
     Private _pos As Integer = 0 ' 当前分析的位置
     Private _nextPos As Integer = 0 ' 下一个分析的位置
     Public _readingChar As Char  '当前读取的字符
-    Private invaild_chars As New List(Of String)
+    Private _line As Long = 1
+    Private ReadOnly invaild_chars As New List(Of String)
 
     ' Lexer构造函数，初始化文本和位置
     Public Sub New(text As String)
@@ -15,11 +16,11 @@
         invaild_chars = chars
 
         '这里得readChar一下，不然报空异常就老实了
-        readChar()
+        ReadChar()
 
     End Sub
 
-    Public Function lexer() As List(Of Token)
+    Public Function Lexer() As List(Of Token)
         Dim tkns As New List(Of Token)
 
         '读取代码中所有Token.直到读取到文件末尾
@@ -27,12 +28,12 @@
             Dim tkn = GetNextToken()
             tkns.Add(tkn)
         End While
-        tkns.Add(New Token(TokenType.EOF, vbNullChar))
+        tkns.Add(New Token(TokenType.EOF, vbNullChar, _line))
 
         Return tkns
     End Function
 
-    Public Sub readChar()
+    Public Sub ReadChar()
         '索引 超过或等于 长度 那么读取的字符修改为 vbNullChar .上面的lexer函数遇到 vbNullChar会停下
         If _pos >= _code.Length OrElse _nextPos > _code.Length Then
             _readingChar = vbNullChar
@@ -45,132 +46,138 @@
             'PySubString是AI写的,vb.net原生的太麻烦了
             '将当前读取的字符修改为下一个字符
             _readingChar = PySubString(_code, _pos, _nextPos)
+
+            If _readingChar = vbCrLf Then
+                _line += 1 ' 当读取到换行符时，行号加1
+            End If
         End If
+
+
     End Sub
 
     ' 获取下一个Token
     Public Function GetNextToken() As Token
-        Dim tkn As New Token(TokenType.ILLEGAL, _readingChar)
+        Dim tkn As New Token(TokenType.ILLEGAL, _readingChar, _line)
 
         '跳过空白字符
-        skipWhiteSpace()
+        SkipWhiteSpace()
 
         '经典的 Select Case 屎山，这里不多做解释
         Select Case _readingChar
             Case ";"c
-                tkn = New Token(TokenType.SEMICOLON, _readingChar)
+                tkn = New Token(TokenType.SEMICOLON, _readingChar, _line)
             Case "+"c
-                tkn = New Token(TokenType.PLUS, _readingChar)
+                tkn = New Token(TokenType.PLUS, _readingChar, _line)
             Case "-"c
                 '如果下一个字符是数字
-                If Char.IsDigit(peekChar()) Then
+                If Char.IsDigit(PeekChar()) Then
                     '读取字符 (没有这行代码会报错 因为当前字符还是 "-" ) 
-                    readChar()
+                    ReadChar()
                     '读取数字
                     Dim num = "-" & ReadIntNumber()
-                    tkn = New Token(TokenType.INTNUMBER, num)
+                    tkn = New Token(TokenType.INTNUMBER, num, _line)
                     Return tkn
                 End If
 
-                tkn = New Token(TokenType.MINUS, _readingChar)
+                tkn = New Token(TokenType.MINUS, _readingChar, _line)
             Case "*"c
-                tkn = New Token(TokenType.ASTERISK, _readingChar)
+                tkn = New Token(TokenType.ASTERISK, _readingChar, _line)
             Case "/"c
-                tkn = New Token(TokenType.SLASH, _readingChar)
+                tkn = New Token(TokenType.SLASH, _readingChar, _line)
             Case "="c
                 '获取下一个字符
-                Dim next_char = peekChar()
+                Dim next_char = PeekChar()
 
                 '如果下一个字符 等于 "=" 组成 ==
                 If next_char = "=" Then
                     '新建 Token . 类型 TokenType.EQ 
-                    tkn = New Token(GetIdentTokenType(_readingChar & next_char), _readingChar & next_char)
-                    readChar() ' 到下一个字符，即"="
+                    tkn = New Token(GetIdentTokenType(_readingChar & next_char), _readingChar & next_char, _line)
+                    ReadChar() ' 到下一个字符，即"="
                 Else
-                    tkn = New Token(TokenType.ASSIGN, _readingChar)
+                    tkn = New Token(TokenType.ASSIGN, _readingChar, _line)
                 End If
 
             Case "!"c
                 '获取下一个字符
-                Dim next_char = peekChar()
+                Dim next_char = PeekChar()
 
                 '如果下一个字符 等于 "=" 组成 !=
                 If next_char = "=" Then
                     '新建 Token . 类型 TokenType.NOT_EQ 
-                    tkn = New Token(GetIdentTokenType(_readingChar & next_char), _readingChar & next_char)
-                    readChar() ' 到下一个字符，即"="
+                    tkn = New Token(GetIdentTokenType(_readingChar & next_char), _readingChar & next_char, _line)
+                    ReadChar() ' 到下一个字符，即"="
                 Else
-                    tkn = New Token(GetIdentTokenType(_readingChar), _readingChar)
+                    tkn = New Token(GetIdentTokenType(_readingChar), _readingChar, _line)
                 End If
             Case "<"c
                 ' 与上面感叹号的差不多，不做介绍
 
-                Dim next_char = peekChar()
+                Dim next_char = PeekChar()
 
                 If next_char = ">" Then '组成  <> . （ "<>"是vb.net中的不等于号,作者喜欢这种,加了上去 ） 
-                    tkn = New Token(GetIdentTokenType(_readingChar & next_char), _readingChar & next_char)
-                    readChar() ' 到下一个字符，即">"
+                    tkn = New Token(GetIdentTokenType(_readingChar & next_char), _readingChar & next_char, _line)
+                    ReadChar() ' 到下一个字符，即">"
                 Else
-                    tkn = New Token(TokenType.LT, _readingChar)
+                    tkn = New Token(TokenType.LT, _readingChar, _line)
                 End If
 
             Case vbCrLf
-                tkn = New Token(TokenType.EOL, vbCrLf)
+                tkn = New Token(TokenType.EOL, vbCrLf, _line)
             Case ">"c
-                tkn = New Token(TokenType.GT, _readingChar)
+                tkn = New Token(TokenType.GT, _readingChar, _line)
             Case "("c
-                tkn = New Token(TokenType.LPAREN, _readingChar)
+                tkn = New Token(TokenType.LPAREN, _readingChar, _line)
             Case ")"c
-                tkn = New Token(TokenType.RPAREN, _readingChar)
+                tkn = New Token(TokenType.RPAREN, _readingChar, _line)
             Case ","c
-                tkn = New Token(TokenType.COMMA, _readingChar)
+                tkn = New Token(TokenType.COMMA, _readingChar, _line)
             Case "["c
-                tkn = New Token(TokenType.LBRACKET, _readingChar)
+                tkn = New Token(TokenType.LBRACKET, _readingChar, _line)
             Case "]"c
-                tkn = New Token(TokenType.RBRACKET, _readingChar)
+                tkn = New Token(TokenType.RBRACKET, _readingChar, _line)
             Case "{"c
-                tkn = New Token(TokenType.LBRACE, _readingChar)
+                tkn = New Token(TokenType.LBRACE, _readingChar, _line)
             Case "}"c
-                tkn = New Token(TokenType.RBRACE, _readingChar)
+                tkn = New Token(TokenType.RBRACE, _readingChar, _line)
             Case ":"c
-                tkn = New Token(TokenType.COLON, _readingChar)
+                tkn = New Token(TokenType.COLON, _readingChar, _line)
             Case "."c
-                tkn = New Token(TokenType.DOT, _readingChar)
+                tkn = New Token(TokenType.DOT, _readingChar, _line)
             Case """"
                 tkn.TokenType = TokenType.STRING_
-                tkn.Value = readString().Replace(vbCr, "")
+                tkn.Value = ReadString().Replace(vbCr, "")
             Case "'"
                 tkn.TokenType = TokenType.SingleQuote
-                tkn.Value = readNote.Replace(vbCr, "")
+                tkn.Value = ReadNote.Replace(vbCr, "")
             Case Else
                 '如果当前字符为数字
                 If Char.IsDigit(_readingChar) Then
                     '读取
                     Dim num = ReadIntNumber()
-                    tkn = New Token(TokenType.INTNUMBER, num)
+                    tkn = New Token(TokenType.INTNUMBER, num, _line)
                     Return tkn
                 End If
 
                 '如果当前字符为字母
-                If Char.IsLetter(_readingChar) Then
+                If Char.IsLetter(_readingChar) OrElse _readingChar = "_" Then
                     '读取 . Replace(vbCr,"")是为了把换行符去掉
                     Dim ident = ReadIdentifier().Replace(vbCr, "")
-                    tkn = New Token(GetIdentTokenType(ident), ident)
+                    tkn = New Token(GetIdentTokenType(ident), ident, _line)
                     Return tkn
                 End If
 
         End Select
 
-        readChar()
+        ReadChar()
         Return tkn
     End Function
 
-    Public Function readNote() As String
+    Public Function ReadNote() As String
         Dim p = _pos
 
         Dim exit_while = False
         While Not exit_while
-            readChar()
+            ReadChar()
             If _readingChar = "'" OrElse _readingChar = vbNullChar Then
                 exit_while = True
             End If
@@ -193,14 +200,14 @@
         Return TokenType.IDENT
     End Function
 
-    Public Sub skipWhiteSpace()
+    Public Sub SkipWhiteSpace()
         ' OrElse _readingChar = vbCr OrElse _readingChar = vbLf OrElse _readingChar = vbCrLf
         While _readingChar = " "c
-            readChar()
+            ReadChar()
         End While
     End Sub
 
-    Public Function peekChar() As Char
+    Public Function PeekChar() As Char
         Return PySubString(_code, _nextPos, _nextPos + 1)
     End Function
 
@@ -210,7 +217,7 @@
 
         '重复读取直到字符不是数字
         While Char.IsDigit(_readingChar)
-            readChar()
+            ReadChar()
         End While
 
         '检查
@@ -219,12 +226,12 @@
         '裁剪
         Return PySubString(_code, p, _pos + 1)
     End Function
-    Public Function readString() As String
+    Public Function ReadString() As String
         Dim p = _pos
 
         Dim exit_while = False
         While Not exit_while
-            readChar()
+            ReadChar()
             If _readingChar = """" OrElse _readingChar = vbCrLf Then
                 exit_while = True
             End If
@@ -251,8 +258,8 @@
 
         '坑爹vb.net (艹皿艹 )
         '重复读取直到字符不是字母 或者 下划线 
-        While (Char.IsLetter(_readingChar) OrElse _readingChar = "_" OrElse IsChineseCharacter(_readingChar))
-            readChar()
+        While (Char.IsLetter(_readingChar) OrElse _readingChar = "_" OrElse IsChineseCharacter(_readingChar) OrElse Char.IsDigit(_readingChar))
+            ReadChar()
         End While
 
         '检查
