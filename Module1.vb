@@ -10,6 +10,7 @@ Public Class Runner
         Dim evaluator As New Evaluator
         Dim lexer As Lexer
         Dim parser As Parser
+        Dim analyzer As SemanticAnalyzer
 
         If Mode = "REPL" Then
             While True
@@ -20,11 +21,15 @@ Public Class Runner
 
                 lexer = New Lexer(input)
                 parser = New Parser(lexer)
+                analyzer = New SemanticAnalyzer()
 
                 Dim program As Program = parser.ParseProgram
-                If parser.checkParserErrors Then Continue While
+                If parser.CheckParserErrors Then Continue While
 
-                Dim result As Fox_Object = evaluator.eval(program, env)
+                analyzer.Analysis(program)
+                If analyzer.CheckErrors Then Continue While
+
+                Dim result As Fox_Object = evaluator.Eval(program, env)
                 If result IsNot Nothing Then
                     Console.WriteLine(result.Inspect)
                 End If
@@ -50,7 +55,7 @@ Public Class Runner
             '遍历所有Statement
             For Each stmt As Statement In program.Statements
                 '求值
-                Dim r As Fox_Object = evaluator.eval(stmt, env)
+                Dim r As Fox_Object = evaluator.Eval(stmt, env)
                 If r IsNot Nothing AndAlso r.Inspect IsNot Nothing Then
                     Console.WriteLine(r.Inspect)
                 End If
@@ -75,7 +80,7 @@ Public Class Runner
     Private Function ReadMultiLineInput(Line As String) As String
         Dim Code = ""
 
-        Dim Tokens As List(Of Token) = New Lexer(Line).lexer
+        Dim Tokens As List(Of Token) = New Lexer(Line).Lexer
         Dim TokenTypes As List(Of TokenType) = GetTokenTypes(Tokens)
         Dim TokenTypePos = 0
         Dim CurTokenType As TokenType = TokenTypes(TokenTypePos)
@@ -91,6 +96,7 @@ Public Class Runner
 
         For Each Start_TokenType As TokenType In MultiLine_TokenType_Dictionary.Keys
             If Not TokenTypes.Contains(Start_TokenType) Then Continue For
+            If TokenTypes.Contains(Start_TokenType) AndAlso TokenTypes.Contains(MultiLine_TokenType_Dictionary(Start_TokenType)) Then Continue For
 
             Dim Lines As New List(Of String)
             Dim input = ""
@@ -101,7 +107,7 @@ Public Class Runner
                 input = Console.ReadLine()
                 Lines.Add(input)
 
-                Tokens = New Lexer(input).lexer
+                Tokens = New Lexer(input).Lexer
                 TokenTypes = GetTokenTypes(Tokens)
 
                 CurTokenType = TokenTypes(0)
@@ -131,7 +137,7 @@ Public Class Runner
                 Dim program As Program = parser.ParseProgram
                 If parser.checkParserErrors Then Continue While
 
-                Dim result As Fox_Object = evaluator.eval(program, env)
+                Dim result As Fox_Object = evaluator.Eval(program, env)
                 If result IsNot Nothing Then
                     Console.WriteLine(result.Inspect)
                 End If
