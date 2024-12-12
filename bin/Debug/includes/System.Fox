@@ -14,11 +14,10 @@ Class Array
 
 	Func Filter(filterFunction)
 		dim new_list = []
-		dim filterFunctionResult
 		for item in Me.Value
-			filterFunctionResult = filterFunction(item)
-			if filterFunctionResult <> Nothing then
-				new_list = new_list + [filterFunctionResult]
+			dim filterFunctionResult = filterFunction(item)
+			if filterFunctionResult then
+				new_list = new_list + [item]
 			endif
 		next
 
@@ -26,22 +25,68 @@ Class Array
 	EndFunc
 
 	Func Count()
-		return len(Me.Value)
+		return len(Value)
+	EndFunc
+
+	Func Sort()
+		Me.Value = Sort(Me.Value)
 	EndFunc
 EndClass
 
 Class String
+	Dim Value = ""
+
+	Func Count()
+		return len(Value)
+	EndFunc
+
+	Func Replace(oldStr, newStr)
+		Return replace(Me.Value, oldStr, newStr)
+	EndFunc
+
+	Func Format(format_list)
+ 		return format(Me.Value, format_list)
+ 	EndFunc
+ 
+ 	Func __Add__(right)
+ 		Return Me.Value + right.Value
+ 	EndFunc
+
+	Func New(string)
+		Me.Value = string
+	EndClass
+EndClass
+
+Class StringTools
 	Dim Empty = ""
-	Dim Value = Nothing
 	Func IsEmpty(Text)
 		Return Text == Me.Empty
 	EndFunc
 
-	Func Count()
-		if Value == Nothing then
-			return 0
-		endif
-			
-		return len(Value)
+	Func Replace(str, oldStr, newStr)
+		Return replace(str, oldStr, newStr)
 	EndFunc
+ 
+ 	Func Format(format_string, format_list)
+ 		return format(format_string, format_list)
+ 	EndFunc
+EndClass
+
+Class Integer
+	Dim Value = 0
+	Func New(int_num)
+		Me.Value = int_num
+	EndFunc
+
+	Func __Add__(right)
+		Return Me.Value + right.Value
+	EndFunc
+
+	Func __Minus__(right)
+		Return Me.Value - right.Value
+	EndFunc
+EndClass
+
+Class Double
+
 EndClass

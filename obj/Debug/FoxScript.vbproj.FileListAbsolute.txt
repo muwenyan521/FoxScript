@@ -12,11 +12,3 @@ D:\soft\FoxScript\obj\Debug\FoxScript.pdb
 D:\soft\FoxScript\bin\Debug\System.ValueTuple.dll
 D:\soft\FoxScript\bin\Debug\System.ValueTuple.xml
 D:\soft\FoxScript\obj\Debug\FoxScript.vbproj.Up2Date
-D:\soft\FoxScript\bin\Debug\System.Buffers.dll
-D:\soft\FoxScript\bin\Debug\System.Memory.dll
-D:\soft\FoxScript\bin\Debug\System.Numerics.Vectors.dll
-D:\soft\FoxScript\bin\Debug\System.Runtime.CompilerServices.Unsafe.dll
-D:\soft\FoxScript\bin\Debug\System.Buffers.xml
-D:\soft\FoxScript\bin\Debug\System.Memory.xml
-D:\soft\FoxScript\bin\Debug\System.Numerics.Vectors.xml
-D:\soft\FoxScript\bin\Debug\System.Runtime.CompilerServices.Unsafe.xml
