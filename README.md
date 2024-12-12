@@ -6,7 +6,7 @@
 闲的
 ## Requirements - 依赖环境
 Windows 7+ （包括Windows 7）  
-.Net Freamework 4.7.2  
+.Net Freamework 4.5.2  
 ## Useage - 用法
 若要进入REPL，双击文件即可  
 若要解析文件 可以在命令行输入 [解释器路径] [文件路径] 开始解析  
