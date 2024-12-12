@@ -1,35 +1,44 @@
 ﻿Imports System.Numerics
-Imports System.Windows.Forms
+Imports System.Windows
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement.Tab
 
 Public Class Evaluator
-    Public Shared Fox_True As Fox_Bool = New Fox_Bool() With {.Value = True}
-    Public Shared Fox_False As Fox_Bool = New Fox_Bool() With {.Value = False}
-    Public Shared Fox_Nothing As Fox_Nothing = New Fox_Nothing()
-    Public Shared Fox_One As Fox_Integer = New Fox_Integer() With {.Value = 1}
-    Public Shared Fox_Zero As Fox_Integer = New Fox_Integer() With {.Value = 0}
+    Public Shared Fox_True As New Fox_Bool() With {.Value = True}
+    Public Shared Fox_False As New Fox_Bool() With {.Value = False}
+    Public Shared Fox_Nothing As New Fox_Nothing()
+    Public Shared Fox_One As New Fox_Integer() With {.Value = 1}
+    Public Shared Fox_Zero As New Fox_Integer() With {.Value = 0}
+    Public Fox_256Numbers As New List(Of Fox_Integer)
+
+    Public Sub New()
+        For i = 0 To 256
+            Fox_256Numbers.Add(New Fox_Integer With {.Value = i})
+        Next
+    End Sub
 
     '判断是否为Error对象. 返回一个布尔值
-    Public Function isError(obj As Fox_Object)
+    Public Function IsError(obj As Fox_Object)
         If obj Is Nothing Then Return False
         Return obj.Type = ObjectType.ERROR_OBJ
     End Function
 
     '求值函数 返回 Fox_Object 类型的对象
-    Public Function eval(node As Object, ByRef env As Environment) As Fox_Object
+    Public Function Eval(node As Object, ByRef env As Environment) As Fox_Object
         If node Is Nothing Then Return Nothing '判空
 
         Select Case node.GetType() '获取类型
             Case GetType(Program) '如果是Program
 
                 '求所有语句的Fox_Object对象
-                Return evalProgram(node.Statements, env)
+                Return EvalProgram(node.Statements, env)
             Case GetType(ExpressionStatement) '若为表达式
 
                 '获取表达式语句的表达式 并求值
-                Return eval(node.Expression, env)
+                Return Eval(node.Expression, env)
             Case GetType(IntegerLiteral) '若为整数
 
                 '返回一个 Fox_Integer类型 的对象
+                If node.Value < (Fox_256Numbers.Count - 1) Then Return Fox_256Numbers(CLng(node.Value.ToString))
                 Return New Fox_Integer With {.Value = node.Value}
             Case GetType(DoubleLiteral) '若为小数
 
@@ -38,62 +47,54 @@ Public Class Evaluator
             Case GetType(Bool) '若为布尔类型
 
                 '调用函数获取对应的Fox_Bool对象
-                Return nativeBoolToBooleanObject(node.Value)
+                Return NativeBoolToBooleanObject(node.Value)
             Case GetType(PrefixExpression) '前缀表达式
                 '将右侧表达式求值
-                Dim right = eval(node.Right, env)
+                Dim right = Eval(node.Right, env)
 
                 '是否为错误对象
-                If isError(right) Then Return right
+                If IsError(right) Then Return right
 
                 '计算前缀表达式的值
-                Return evalPrefixExpression(node.Operator_, right)
+                Return EvalPrefixExpression(node.Operator_, right)
             Case GetType(InfixExpression) '中缀表达式
 
                 '将左侧的表达式求值
-                Dim Left = eval(node.Left, env)
+                Dim Left = Eval(node.Left, env)
                 '将右侧的表达式求值
-                Dim Right = eval(node.Right, env)
+                Dim Right = Eval(node.Right, env)
 
                 '是否为错误对象
-                If isError(Left) Then Return Left
-                If isError(Right) Then Return Right
+                If IsError(Left) Then Return Left
+                If IsError(Right) Then Return Right
 
                 '计算中缀表达式的值
-                Return evalInfixExpression(node.Operator_, Left, Right)
+                Return EvalInfixExpression(node.Operator_, Left, Right)
             Case GetType(BlockStatement) '若为代码块
 
                 ' 求语句所有的Fox_Object类型的对象
-                Return evalBlockStatement(node, env)
+                Return EvalBlockStatement(node, env)
             Case GetType(IfExpression) '若为 if表达式
 
                 '计算If表达式的值
-                Return evalIfExpression(node, env)
+                Return EvalIfExpression(node, env)
             Case GetType(ReturnStatement) '若为返回语句
                 '将欲返回的表达式进行求值
-                Dim val = eval(node.ReturnValue, env)
+                Dim val = Eval(node.ReturnValue, env)
 
                 '是否为错误对象
-                If isError(val) Then Return val
+                If IsError(val) Then Return val
 
                 '返回一个值是 val 的 Fox_ReturnValue 对象
                 Return New Fox_ReturnValue With {.Value = val}
             Case GetType(DimStatement) '若为 Dim 语句
                 Dim dim_stmt = TryCast(node, DimStatement)
 
-                '尝试获取标识符
-                Dim get_Ident = env.GetValue(dim_stmt.Name.ToString)
-
-                '如果存在
-                If get_Ident.Item2 Then
-                    Return ThrowError($"标识符 {dim_stmt.Name.ToString} 已存在! 内容为:{get_Ident.Item1.Inspect}")
-                End If
-
                 '对欲设置为值的表达式求值
-                Dim value = eval(dim_stmt.Value, env)
+                Dim value = Eval(dim_stmt.Value, env)
 
                 '检查是否为错误对象
-                If isError(value) Then Return value
+                If IsError(value) Then Return value
 
                 '设置指定标识符的值
                 env.SetValue(dim_stmt.Name.Value, value)
@@ -114,59 +115,59 @@ Public Class Evaluator
             Case GetType(CallExpression) '若为调用表达式
 
                 '计算表达式的值
-                Dim Func = eval(node.Func, env)
+                Dim Func = Eval(node.Func, env)
 
                 '判断是否为错误对象
-                If isError(Func) Then Return Func
+                If IsError(Func) Then Return Func
 
                 '计算所有表达式实参
-                Dim args = evalExpressions(node.Arguments, env)
+                Dim args = EvalExpressions(node.Arguments, env)
 
                 '如果参数数量为1 并且 这一个参数为错误对象 返回这一个参数
-                If args.Count = 1 AndAlso isError(args(0)) Then Return args(0)
+                If args.Count = 1 AndAlso IsError(args(0)) Then Return args(0)
 
                 '应用函数
-                Return applyFunction(Func, args)
+                Return ApplyFunction(Func, args)
 
             Case GetType(Identifier) '若为标识符
 
                 '求标识符的值
-                Return evalIdentifier(DirectCast(node, Identifier), env)
+                Return EvalIdentifier(DirectCast(node, Identifier), env)
             Case GetType(StringLiteral)
                 '返回一个 Fox_String 的对象
                 Return New Fox_String With {.Value = node.Value}
             Case GetType(ArrayLiteral)
                 '对所有的表达式进行求值
-                Dim elements = evalExpressions(node.Elements, env)
+                Dim elements = EvalExpressions(node.Elements, env)
 
-                If elements.Count = 1 AndAlso isError(elements(0)) Then
+                If elements.Count = 1 AndAlso IsError(elements(0)) Then
                     Return elements(0)
                 End If
 
                 '返回一个 Fox_Array 对象
                 Return New Fox_Array With {.Elements = elements}
             Case GetType(IndexExpression)
-                Dim Left = eval(node.Left, env)
-                If isError(Left) Then
+                Dim Left = Eval(node.Left, env)
+                If IsError(Left) Then
                     Return Left
                 End If
-                Dim Index = eval(node.Index, env)
-                If isError(Index) Then
+                Dim Index = Eval(node.Index, env)
+                If IsError(Index) Then
                     Return Index
                 End If
-                Return evalIndexExpression(Left, Index)
+                Return EvalIndexExpression(Left, Index)
             Case GetType(DictionaryLiteral)
                 '对字典表达式 求值
-                Return evalHashLiteral(node, env)
+                Return EvalHashLiteral(node, env)
             Case GetType(ForStatement)
                 '将当前节点转换成 ForStatement
                 Dim for_stmt = TryCast(node, ForStatement)
 
                 '对For语句欲遍历的表达式进行求值
-                Dim items = eval(for_stmt.Items, env)
+                Dim items = Eval(for_stmt.Items, env)
 
                 '检查是否为错误对象
-                If isError(items) Then Return items
+                If IsError(items) Then Return items
 
                 '检查欲遍历的对象是否为列表
                 If items.Type <> ObjectType.ARRAY_OBJ Then Return ThrowError($"for循环不支持遍历 {items.Type} 的值")
@@ -177,7 +178,7 @@ Public Class Evaluator
                     env.SetValue(for_stmt.ItemVar.ToString, __item__)
 
                     '对For语句中欲重复执行的代码进行求值
-                    Dim r = eval(for_stmt.LoopBlock, env)
+                    Dim r = Eval(for_stmt.LoopBlock, env)
                     If r Is Nothing Then Continue For
                     r.Inspect()
                 Next
@@ -186,10 +187,10 @@ Public Class Evaluator
                 Dim while_stmt = TryCast(node, WhileStatement)
 
                 '计算While语句的循环条件
-                Dim cond_obj = eval(while_stmt.LoopCondition, env)
+                Dim cond_obj = Eval(while_stmt.LoopCondition, env)
 
                 '检查是否为错误对象
-                If isError(cond_obj) Then Return cond_obj
+                If IsError(cond_obj) Then Return cond_obj
 
                 '检查循环条件的对象类型是否为Bool类型
                 If cond_obj.Type <> ObjectType.BOOL_OBJ Then Return ThrowError($"while循环不支持条件为 {cond_obj.Type} 的值")
@@ -197,53 +198,51 @@ Public Class Evaluator
                 'While循环
                 While TryCast(cond_obj, Fox_Bool).Value
                     '再次计算条件表达式的值
-                    cond_obj = eval(while_stmt.LoopCondition, env)
+                    cond_obj = Eval(while_stmt.LoopCondition, env)
 
                     '计算While语句欲循环的代码
-                    Dim r = eval(while_stmt.LoopBlock, env)
+                    Dim r = Eval(while_stmt.LoopBlock, env)
                     If r Is Nothing Then Continue While
-                    If isError(r) Then Return r
+                    If IsError(r) Then Return r
 
                     r.Inspect()
                 End While
             Case GetType(AssignmentExpression)
                 Dim assignmentExp = TryCast(node, AssignmentExpression)
-                Dim value = evalAssignmentExpression(assignmentExp.SetExp, node.Value, env)
-
+                Dim value = EvalAssignmentExpression(assignmentExp.SetExp, node.Value, env)
                 Return value
-
             Case GetType(NotExpression)
                 Dim notExp = TryCast(node, NotExpression)
 
                 '计算右侧欲取反的表达式
-                Dim rightObject = eval(notExp.Right, env)
-                If isError(rightObject) Then Return rightObject
+                Dim rightObject = Eval(notExp.Right, env)
+                If IsError(rightObject) Then Return rightObject
 
-                Return nativeBoolToBooleanObject(Not isTruthy(rightObject))
+                Return NativeBoolToBooleanObject(Not IsTruthy(rightObject))
             Case GetType(AndExpression)
                 Dim andExp = TryCast(node, AndExpression)
 
                 '计算左侧欲进行与运算的表达式
-                Dim leftObject = eval(andExp.Left, env)
-                If isError(leftObject) Then Return leftObject
+                Dim leftObject = Eval(andExp.Left, env)
+                If IsError(leftObject) Then Return leftObject
 
                 '将对象转换成布尔值
                 Dim leftBoolObject As Fox_Object = TryCast(Builtins.builtinFuncs("CBool").BuiltinFunction({leftObject}), Fox_Object)
 
                 '如果不为真
-                If Not isTruthy(leftBoolObject) Then
+                If Not IsTruthy(leftBoolObject) Then
                     Return Fox_False '返回假
                 End If
 
                 '计算右侧欲进行与运算的表达式
-                Dim rightObject = eval(andExp.Right, env)
-                If isError(rightObject) Then Return rightObject
+                Dim rightObject = Eval(andExp.Right, env)
+                If IsError(rightObject) Then Return rightObject
 
                 '将对象转换成布尔值
                 Dim rightBoolObject As Fox_Object = TryCast(Builtins.builtinFuncs("CBool").BuiltinFunction({rightObject}), Fox_Object)
 
                 '如果不为真
-                If Not isTruthy(rightBoolObject) Then
+                If Not IsTruthy(rightBoolObject) Then
                     Return Fox_False '返回假
                 End If
 
@@ -254,26 +253,26 @@ Public Class Evaluator
                 Dim orExp = TryCast(node, OrExpression)
 
                 '计算左侧欲进行或运算的表达式
-                Dim leftObject = eval(orExp.Left, env)
-                If isError(leftObject) Then Return leftObject
+                Dim leftObject = Eval(orExp.Left, env)
+                If IsError(leftObject) Then Return leftObject
 
                 '将对象转换成布尔值
                 Dim leftBoolObject As Fox_Object = TryCast(Builtins.builtinFuncs("CBool").BuiltinFunction({leftObject}), Fox_Object)
 
                 '如果为真
-                If isTruthy(leftBoolObject) Then
+                If IsTruthy(leftBoolObject) Then
                     Return Fox_True '短路 返回真
                 End If
 
                 '计算右侧欲进行或运算的表达式
-                Dim rightObject = eval(orExp.Right, env)
-                If isError(rightObject) Then Return rightObject
+                Dim rightObject = Eval(orExp.Right, env)
+                If IsError(rightObject) Then Return rightObject
 
                 '将对象转换成布尔值
                 Dim rightBoolObject As Fox_Object = TryCast(Builtins.builtinFuncs("CBool").BuiltinFunction({rightObject}), Fox_Object)
 
                 '如果为真
-                If isTruthy(rightBoolObject) Then
+                If IsTruthy(rightBoolObject) Then
                     Return Fox_True '返回真
                 End If
 
@@ -307,7 +306,7 @@ Public Class Evaluator
                     End If
                 Next
 
-                eval(clsObj.Body, clsObj.Env)
+                Eval(clsObj.Body, clsObj.Env)
                 clsObj.Env.SetValue("Me", clsObj)
 
                 env.SetValue(className.Value, clsObj)
@@ -319,24 +318,24 @@ Public Class Evaluator
 
             Case GetType(ObjectMemberExpression)
                 Dim objMemberExp = TryCast(node, ObjectMemberExpression)
-                Dim leftObj = eval(objMemberExp.Left, env)
-                If isError(leftObj) Then Return leftObj
+                Dim leftObj = Eval(objMemberExp.Left, env)
+                If IsError(leftObj) Then Return leftObj
 
-                Return evalObjectMemberExpression(leftObj, objMemberExp.Right, env)
+                Return EvalObjectMemberExpression(leftObj, objMemberExp.Right, env)
             Case GetType(ObjectCreateExpression)
                 Dim objCreateExp = TryCast(node, ObjectCreateExpression)
 
-                Dim r = eval(objCreateExp.ObjType, env)
-                If isError(r) Then Return r
+                Dim r = Eval(objCreateExp.ObjType, env)
+                If IsError(r) Then Return r
 
                 Dim classObj As Fox_Class = r
                 Dim newObj = New Fox_Class With {.Body = classObj.Body, .Env = New Environment, .Name = classObj.Name, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments}
 
-                eval(newObj.Body, newObj.Env)
+                Eval(newObj.Body, newObj.Env)
                 newObj.Env.SetValue("Me", newObj)
 
                 If newObj.CreateFunc IsNot Nothing Then
-                    eval(New CallExpression With
+                    Eval(New CallExpression With
                          {
                             .Arguments = newObj.CreateArgs,
                             .Func = newObj.CreateFunc.Name
@@ -351,8 +350,8 @@ Public Class Evaluator
                 Dim className = fileImportExp.AliasName.ToString.Replace("(", "").Replace(")", "")
 
                 Dim classObj = New Fox_Class With {.Body = New BlockStatement, .Env = New Environment, .Name = New Identifier With {.Value = className}}
-                Dim filePath As Object = eval(fileImportExp.FilePath, env)
-                If isError(filePath) Then Return filePath
+                Dim filePath As Object = Eval(fileImportExp.FilePath, env)
+                If IsError(filePath) Then Return filePath
 
                 Dim runner As New Runner With {.Mode = "FILE", .FilePath = filePath.Value}
                 classObj.Body.Statements = runner.Run(classObj.Env)
@@ -363,7 +362,28 @@ Public Class Evaluator
         Return Nothing
     End Function
 
-    Public Function evalAssignmentExpression(SetExp As Expression, valueExp As Expression, ByRef env As Environment)
+    Public Function FindFunctionLiteral(Name As String, Statements As List(Of Statement))
+        Dim Stmts = FindAllStatement(Statements, GetType(ExpressionStatement))
+        Dim expStmts As New List(Of ExpressionStatement)
+        For Each stmt As ExpressionStatement In Stmts
+            expStmts.Add(stmt)
+        Next
+
+
+        Dim funcLiterals = FindAllExpression(expStmts, GetType(FunctionLiteral))
+        For Each stmt As FunctionLiteral In funcLiterals
+            Dim funcLiteral = TryCast(stmt, FunctionLiteral)
+            If funcLiteral.Name.Value.Replace(" ", "") = Name Then
+                Return funcLiteral
+            End If
+        Next
+
+        Return Nothing
+    End Function
+
+
+
+    Public Function EvalAssignmentExpression(SetExp As Expression, valueExp As Expression, ByRef env As Environment)
         Select Case SetExp.GetType
             Case GetType(Identifier)
                 '转换为表达式为Identifier
@@ -375,19 +395,19 @@ Public Class Evaluator
                 '标识符不存在
                 If Not get_Ident.Item2 Then
                     '报错
-                    Return ThrowError($"标识符 {ident.ToString} 不存在! ")
+                    Return ThrowError($"标识符 {ident.Value} 不存在! ")
                 End If
 
                 '将环境中标识符的值修改
-                env.SetValue(ident.Value, eval(valueExp, env))
+                env.SetValue(ident.Value, Eval(valueExp, env))
 
             Case GetType(ObjectMemberExpression)
                 Dim ObjectMemberExp = TryCast(SetExp, ObjectMemberExpression)
-                Dim ClassObject As Object = eval(ObjectMemberExp.Left, env)
-                If isError(ClassObject) Then Return ClassObject
+                Dim ClassObject As Object = Eval(ObjectMemberExp.Left, env)
+                If IsError(ClassObject) Then Return ClassObject
 
                 Dim name = ObjectMemberExp.Right.ToString.Replace(" ", "")
-                Dim value = eval(valueExp, env)
+                Dim value = Eval(valueExp, env)
                 ClassObject.Env.SetValue(name, value)
                 ClassObject.Env.SetValue("Me", ClassObject)
 
@@ -438,12 +458,12 @@ Public Class Evaluator
     End Function
 
 
-    Public Function evalObjectMemberExpression(leftObject As Fox_Object, rightExp As Expression, ByRef env As Environment)
+    Public Function EvalObjectMemberExpression(leftObject As Fox_Object, rightExp As Expression, ByRef env As Environment)
         Select Case leftObject.Type
             Case ObjectType.CLASS_OBJ
                 Dim classObj = TryCast(leftObject, Fox_Class)
 
-                Dim result = eval(rightExp, classObj.Env)
+                Dim result = Eval(rightExp, classObj.Env)
 
                 Return result
         End Select
@@ -460,7 +480,7 @@ Public Class Evaluator
 
         Return False
     End Function
-    Public Function evalHashLiteral(
+    Public Function EvalHashLiteral(
         Node As DictionaryLiteral,
         env As Environment
     ) As Fox_Object
@@ -470,13 +490,13 @@ Public Class Evaluator
             Dim keyNode = parisNode.Key
             Dim valueNode = parisNode.Value
 
-            Dim key = eval(keyNode, env)
-            If isError(key) Then Return key
+            Dim key = Eval(keyNode, env)
+            If IsError(key) Then Return key
 
             Dim dictKeyType = key.Type
             Dim dictKey As Object = key
-            Dim dictValue = eval(valueNode, env)
-            If isError(dictValue) Then Return dictValue
+            Dim dictValue = Eval(valueNode, env)
+            If IsError(dictValue) Then Return dictValue
 
             Select Case dictKeyType
                 Case ObjectType.INTEGER_OBJ
@@ -524,22 +544,22 @@ Public Class Evaluator
         Return New Fox_Dictionary With {.Pairs = pairs}
     End Function
 
-    Public Function evalIndexExpression(Left As Fox_Object, Index As Fox_Object) As Fox_Object
+    Public Function EvalIndexExpression(Left As Fox_Object, Index As Fox_Object) As Fox_Object
         If Left.Type() = ObjectType.ARRAY_OBJ AndAlso Index.Type() = ObjectType.INTEGER_OBJ Then
             '当左侧的对象是一个列表，且索引是一个整数，那么计算索引表达式的值
-            Return evalArrayIndexExpression(Left, Index)
+            Return EvalArrayIndexExpression(Left, Index)
         ElseIf Left.Type() = ObjectType.DICTIONARY_OBJ Then
             '当左侧的对象是一个字典，那么计算索引表达式的值
-            Return evalDictionaryIndexExpression(Left, Index)
+            Return EvalDictionaryIndexExpression(Left, Index)
         ElseIf Left.Type() = ObjectType.STRING_OBJ AndAlso Index.Type() = ObjectType.INTEGER_OBJ Then
             '当左侧的对象是一个字符串，且索引是一个整数，那么计算索引表达式的值
-            Return evalStringIndexExpression(Left, Index)
+            Return EvalStringIndexExpression(Left, Index)
         Else
             Return ThrowError($"索引操作不支持 {Left.Type()}")
         End If
     End Function
 
-    Public Function evalStringIndexExpression(Str As Fox_Object, Index As Fox_Object) As Fox_Object
+    Public Function EvalStringIndexExpression(Str As Fox_Object, Index As Fox_Object) As Fox_Object
         '转换对象
         Dim stringObject = TryCast(Str, Fox_String)
         Dim indexObject = TryCast(Index, Fox_Integer)
@@ -550,7 +570,7 @@ Public Class Evaluator
 
         '比较索引值是否超过最大索引值
         If indexValue >= strValue.Count Then
-            Return ThrowError($"索引 {indexValue.ToString} 超出字符串范围")
+            Return ThrowError($"索引 {indexValue} 超出字符串范围")
         End If
 
         '返回一个Fox_String对象 值为字符串对应索引的字符
@@ -558,7 +578,7 @@ Public Class Evaluator
     End Function
 
 
-    Public Function evalDictionaryIndexExpression(Dict As Fox_Object, Index As Fox_Object) As Fox_Object
+    Public Function EvalDictionaryIndexExpression(Dict As Fox_Object, Index As Fox_Object) As Fox_Object
         '尝试转换
         Dim dictionaryObject = TryCast(Dict, Fox_Dictionary)
 
@@ -568,7 +588,7 @@ Public Class Evaluator
         '如果转换失败，报错
         If dictionaryObject Is Nothing Then Return ThrowError($"不是一个字典: 类型 {Dict.Type} 内容 {Dict.Inspect}")
 
-        Dim pair As Fox_DictionaryPair = Nothing
+        Dim pair As Fox_DictionaryPair
 
         '遍历字典的键列表
         For Each k As Fox_DictionaryKey In dictionaryObject.Pairs.Keys
@@ -584,7 +604,7 @@ Public Class Evaluator
         Return pair
     End Function
 
-    Public Function evalArrayIndexExpression(Array As Fox_Object, Index As Fox_Object) As Fox_Object
+    Public Function EvalArrayIndexExpression(Array As Fox_Object, Index As Fox_Object) As Fox_Object
         '尝试转换
         Dim arrayObject = TryCast(Array, Fox_Array)
         Dim idx_obj = TryCast(Index, Fox_Integer)
@@ -601,7 +621,7 @@ Public Class Evaluator
         End If
         Return arrayObject.Elements(idx_obj.Value)
     End Function
-    Public Function applyFunction(func As Fox_Object, args As List(Of Fox_Object)) As Fox_Object
+    Public Function ApplyFunction(func As Fox_Object, args As List(Of Fox_Object)) As Fox_Object
 
         Select Case func.GetType
             Case GetType(Fox_Function)
@@ -609,13 +629,13 @@ Public Class Evaluator
                 Dim f = TryCast(func, Fox_Function)
 
                 '扩展函数环境
-                Dim extendedEnv = extendFunctionEnv(f, args)
+                Dim extendedEnv = ExtendFunctionEnv(f, args)
 
                 '对欲运行的代码求值
-                Dim evaluated = eval(f.Body, extendedEnv)
+                Dim evaluated = Eval(f.Body, extendedEnv)
 
                 '解包返回函数
-                Return unwrapReturnValue(evaluated)
+                Return UnwrapReturnValue(evaluated)
             Case GetType(Fox_Builtin)
                 '若为Fox_Builtin，将对象转换为Fox_Builtin对象
                 Dim builtin = TryCast(func, Fox_Builtin)
@@ -629,7 +649,7 @@ Public Class Evaluator
 
     End Function
 
-    Public Function extendFunctionEnv(
+    Public Function ExtendFunctionEnv(
         ByRef func As Fox_Function,
         args As List(Of Fox_Object)
     ) As Environment
@@ -656,14 +676,14 @@ Public Class Evaluator
 
         Return env
     End Function
-    Public Function unwrapReturnValue(obj As Fox_Object) As Fox_Object
+    Public Function UnwrapReturnValue(obj As Fox_Object) As Fox_Object
         Dim returnValue = TryCast(obj, Fox_ReturnValue)
         If returnValue IsNot Nothing Then Return returnValue.Value
         Return returnValue
     End Function
 
 
-    Public Function evalExpressions(
+    Public Function EvalExpressions(
         exps As List(Of Expression),
         ByRef env As Environment
     ) As List(Of Fox_Object)
@@ -673,10 +693,10 @@ Public Class Evaluator
         '遍历表达式
         For Each e As Expression In exps
             '对表达式求值
-            Dim evaluated = eval(e, env)
+            Dim evaluated = Eval(e, env)
 
             '若为错误对象则返回
-            If isError(evaluated) Then Return New List(Of Fox_Object) From {evaluated}
+            If IsError(evaluated) Then Return New List(Of Fox_Object) From {evaluated}
 
             '添加对象至列表中
             result.Add(evaluated)
@@ -685,7 +705,7 @@ Public Class Evaluator
         Return result
     End Function
 
-    Public Function evalIdentifier(
+    Public Function EvalIdentifier(
         Node As Identifier,
         ByRef env As Environment
     ) As Fox_Object
@@ -723,13 +743,13 @@ Public Class Evaluator
     End Function
 
     '解析代码块语句
-    Public Function evalBlockStatement(block As BlockStatement, env As Environment) As Fox_Object
+    Public Function EvalBlockStatement(block As BlockStatement, env As Environment) As Fox_Object
         Dim result = Nothing
 
         '循环遍历代码块的所有语句
         For Each s As Statement In block.Statements
             '求值
-            result = eval(s, env)
+            result = Eval(s, env)
 
             '判断
             If result IsNot Nothing Then
@@ -744,37 +764,37 @@ Public Class Evaluator
     End Function
 
     '获取if表达式的值 返回一个 Fox_Object 类型的对象
-    Public Function evalIfExpression(if_exp As IfExpression, env As Environment) As Fox_Object
+    Public Function EvalIfExpression(if_exp As IfExpression, env As Environment) As Fox_Object
         '获取条件表达式
-        Dim condition = eval(if_exp.Condition, env)
+        Dim condition = Eval(if_exp.Condition, env)
 
         '是否为错误对象
-        If isError(condition) Then Return condition
+        If IsError(condition) Then Return condition
 
-        If isTruthy(condition) Then '条件为真
+        If IsTruthy(condition) Then '条件为真
             '为真则返回 默认条件代码块
-            Return eval(if_exp.Consequence, env)
+            Return Eval(if_exp.Consequence, env)
         ElseIf if_exp.ElseIf_List IsNot Nothing Then ' 条件不为真 但有ElseIf分支
             '遍历分支列表
             For Each elseif_exp As ElseIfExpression In if_exp.ElseIf_List
                 '求条件的值
-                Dim cond = eval(elseif_exp.Condition, env)
+                Dim cond = Eval(elseif_exp.Condition, env)
 
                 '条件为真
-                If isTruthy(cond) Then
+                If IsTruthy(cond) Then
                     '返回分支代码块
-                    Return eval(elseif_exp.Consequence, env)
+                    Return Eval(elseif_exp.Consequence, env)
                 End If
             Next
 
             If if_exp.Alternative IsNot Nothing Then '条件不为真 但是 有Else分支代码块 
                 '返回Else分支代码块
-                Return eval(if_exp.Alternative, env)
+                Return Eval(if_exp.Alternative, env)
             End If
 
         ElseIf if_exp.Alternative IsNot Nothing Then '条件不为真 但是 有Else分支代码块 
             '返回Else分支代码块
-            Return eval(if_exp.Alternative, env)
+            Return Eval(if_exp.Alternative, env)
         Else '都不是
             Return Fox_Nothing
         End If
@@ -782,7 +802,7 @@ Public Class Evaluator
         Return Fox_Nothing
     End Function
 
-    Public Function isTruthy(obj As Fox_Object) As Boolean
+    Public Function IsTruthy(obj As Fox_Object) As Boolean
         '判空
         If obj Is Nothing Then Return False
 
@@ -796,6 +816,8 @@ Public Class Evaluator
             Case GetType(Fox_Integer), GetType(Fox_Double)
                 '当整数/小数值不为零 返回真 否则返回假
                 Return TryCast(obj, Object).Value <> 0
+            Case GetType(Fox_String)
+                Return Not String.IsNullOrEmpty(TryCast(obj, Fox_String).Value)
             Case Else
                 '未知的类型 返回假
                 Return False
@@ -814,13 +836,13 @@ Public Class Evaluator
             End If
         End If
 
-        If isError(Left) Then Return Left
-        If isError(Right) Then Return Right
+        If IsError(Left) Then Return Left
+        If IsError(Right) Then Return Right
 
         Return Nothing
     End Function
 
-    Public Function evalInfixExpression(
+    Public Function EvalInfixExpression(
         operator_ As String, '操作符
         Left As Fox_Object, '操作符左边的对象
         Right As Fox_Object '操作符右边的对象
@@ -829,6 +851,10 @@ Public Class Evaluator
         '判空
         Dim result = CheckObject(operator_, Left, Right)
         If result IsNot Nothing Then Return result
+
+        If Left.Type = ObjectType.CLASS_OBJ OrElse Right.Type = ObjectType.CLASS_OBJ Then
+            Return EvalClassObjectInfixExpression(operator_, Left, Right)
+        End If
 
         ' 根据类型选择不同的处理函数
         Dim handler As Func(Of String, Fox_Object, Fox_Object, Fox_Object) = GetTypeHandlers(Left.Type, Right.Type)
@@ -841,27 +867,69 @@ Public Class Evaluator
 
     Private Function GetTypeHandlers(leftType As ObjectType, rightType As ObjectType) As Func(Of String, Fox_Object, Fox_Object, Fox_Object)
         If leftType = ObjectType.DOUBLE_OBJ OrElse rightType = ObjectType.DOUBLE_OBJ Then
-            Return AddressOf evalDoubleInfixExpression
+            Return AddressOf EvalDoubleInfixExpression
         End If
 
         Select Case leftType
             Case ObjectType.INTEGER_OBJ
-                Return AddressOf evalIntegerInfixExpression
+                Return AddressOf EvalIntegerInfixExpression
             Case ObjectType.BOOL_OBJ
-                Return AddressOf evalBoolInfixExpression
+                Return AddressOf EvalBoolInfixExpression
             Case ObjectType.STRING_OBJ
-                Return AddressOf evalStringInfixExpression
+                Return AddressOf EvalStringInfixExpression
             Case ObjectType.DOUBLE_OBJ
-                Return AddressOf evalDoubleInfixExpression
+                Return AddressOf EvalDoubleInfixExpression
             Case ObjectType.ARRAY_OBJ
-                Return AddressOf evalArrayInfixExpression
+                Return AddressOf EvalArrayInfixExpression
             Case ObjectType.NOTHINGL_OBJ
-                Return AddressOf evalNothingInfixExpression
+                Return AddressOf EvalNothingInfixExpression
             Case Else
                 Return Nothing
         End Select
     End Function
 
+    Private Function EvalClassObjectInfixExpression(
+        operator_ As String,
+        Left As Fox_Object,
+        Right As Fox_Object
+    ) As Fox_Object
+
+        '判空
+        Dim result = CheckObject(operator_, Left, Right)
+        If result IsNot Nothing Then Return result
+
+        If Left.Type <> ObjectType.CLASS_OBJ Then
+            Return ThrowError($"未知的操作: {Left.Type} {operator_} {TryCast(Right, Fox_Class).Name.Value}")
+        End If
+
+        If Right.Type <> ObjectType.CLASS_OBJ Then
+            Return ThrowError($"未知的操作: {TryCast(Left, Fox_Class).Name.Value} {operator_} {Right.Type}")
+        End If
+
+        Dim leftObject As Fox_Class = Left
+        Dim rightObject As Fox_Class = Right
+
+
+        Select Case operator_
+            Case "+"
+                Dim AddFuncLitreal As FunctionLiteral = FindFunctionLiteral("__Add__", leftObject.Body.Statements)
+                If AddFuncLitreal Is Nothing Then Return ThrowError($"未知的操作:{leftObject.Name.Value} {operator_} {rightObject.Name.Value}")
+
+                Dim functionObject = Eval(AddFuncLitreal, leftObject.Env)
+                If IsError(functionObject) Then Return functionObject
+
+                Return ApplyFunction(functionObject, New List(Of Fox_Object) From {rightObject})
+            Case "-"
+                Dim MinusFuncLitreal As FunctionLiteral = FindFunctionLiteral("__Minus__", leftObject.Body.Statements)
+                If MinusFuncLitreal Is Nothing Then Return ThrowError($"未知的操作:{leftObject.Name.Value} {operator_} {rightObject.Name.Value}")
+
+                Dim functionObject = Eval(MinusFuncLitreal, leftObject.Env)
+                If IsError(functionObject) Then Return functionObject
+
+                Return ApplyFunction(functionObject, New List(Of Fox_Object) From {rightObject})
+        End Select
+
+    End Function
     Private Function GetType_ConvertHandlers(leftType As ObjectType, rightType As ObjectType) As Func(Of IEnumerable(Of Object), Object)
         If leftType = ObjectType.NOTHINGL_OBJ AndAlso rightType = ObjectType.NOTHINGL_OBJ Then Return Builtins.builtinFuncs("CNothing").BuiltinFunction
         If leftType = ObjectType.DOUBLE_OBJ OrElse rightType = ObjectType.DOUBLE_OBJ Then Return Builtins.builtinFuncs("CDbl").BuiltinFunction
@@ -881,7 +949,7 @@ Public Class Evaluator
                 Return Nothing
         End Select
     End Function
-    Public Function evalArrayInfixExpression(
+    Public Function EvalArrayInfixExpression(
         operator_ As String,
         Left As Fox_Object,
         Right As Fox_Object
@@ -911,10 +979,10 @@ Public Class Evaluator
                     Dim left_obj = leftVal(i)
                     Dim right_obj = rightVal(i)
 
-                    Dim obj = evalInfixExpression("==", left_obj, right_obj)
+                    Dim obj = EvalInfixExpression("==", left_obj, right_obj)
                     Dim bool_obj = TryCast(obj, Fox_Bool)
 
-                    If isError(obj) Then Return Fox_False
+                    If IsError(obj) Then Return Fox_False
                     results.Add(bool_obj.Value)
                 Next
 
@@ -927,10 +995,10 @@ Public Class Evaluator
                     Dim left_obj = leftVal(i)
                     Dim right_obj = rightVal(i)
 
-                    Dim obj = evalInfixExpression("<>", left_obj, right_obj)
+                    Dim obj = EvalInfixExpression("<>", left_obj, right_obj)
                     Dim bool_obj = TryCast(obj, Fox_Bool)
 
-                    If isError(obj) Then Return Fox_False
+                    If IsError(obj) Then Return Fox_False
                     results.Add(bool_obj.Value)
                 Next
 
@@ -942,7 +1010,7 @@ Public Class Evaluator
     End Function
 
 
-    Public Function evalStringInfixExpression(
+    Public Function EvalStringInfixExpression(
         operator_ As String,
         Left As Fox_Object,
         Right As Fox_Object
@@ -970,7 +1038,7 @@ Public Class Evaluator
     End Function
 
     '求布尔值
-    Public Function evalBoolInfixExpression(
+    Public Function EvalBoolInfixExpression(
         operator_ As String, '操作符
         Left As Fox_Object, '操作符左边的对象
         Right As Fox_Object'操作符右边的对象
@@ -1000,20 +1068,20 @@ Public Class Evaluator
 
                 Return New Fox_Double With {.Value = BoolToLong(leftVal) / BoolToLong(rightVal)}
             Case "<" '小于
-                Return nativeBoolToBooleanObject(BoolToLong(leftVal) < BoolToLong(rightVal))
+                Return NativeBoolToBooleanObject(BoolToLong(leftVal) < BoolToLong(rightVal))
             Case ">" '大于
-                Return nativeBoolToBooleanObject(BoolToLong(leftVal) > BoolToLong(rightVal))
+                Return NativeBoolToBooleanObject(BoolToLong(leftVal) > BoolToLong(rightVal))
             Case "==" '等于
-                Return nativeBoolToBooleanObject(leftVal = rightVal)
+                Return NativeBoolToBooleanObject(leftVal = rightVal)
             Case "!=", "<>" '不等于
-                Return nativeBoolToBooleanObject(leftVal <> rightVal)
+                Return NativeBoolToBooleanObject(leftVal <> rightVal)
             Case Else
                 '信息大致内容: 未知的操作符 : [左值] [运算符] [右值]
                 Return ThrowError($"未知的操作: {Left.Type} {operator_} {Right.Type}")
         End Select
     End Function
 
-    Public Function evalNothingInfixExpression(
+    Public Function EvalNothingInfixExpression(
         operator_ As String, '操作符
         Left As Fox_Object, '操作符左边的对象
         Right As Fox_Object ' 操作符右边的对象
@@ -1026,9 +1094,9 @@ Public Class Evaluator
         '判断操作符并新建对应对象
         Select Case operator_
             Case "==" '等于
-                Return nativeBoolToBooleanObject(leftVal Is rightVal)  '返回Fox_Bool类型对象
+                Return NativeBoolToBooleanObject(leftVal Is rightVal)  '返回Fox_Bool类型对象
             Case "!=", "<>" '不等于
-                Return nativeBoolToBooleanObject(leftVal IsNot rightVal)  '返回Fox_Bool类型对象
+                Return NativeBoolToBooleanObject(leftVal IsNot rightVal)  '返回Fox_Bool类型对象
             Case Else
                 '未知的操作符 : [左值] [操作符] [右值]
                 Return ThrowError($"未知的操作: {leftVal} {operator_} {rightVal}")
@@ -1037,7 +1105,7 @@ Public Class Evaluator
 
 
     '求整数值
-    Public Function evalIntegerInfixExpression(
+    Public Function EvalIntegerInfixExpression(
         operator_ As String, '操作符
         Left As Fox_Object, '操作符左边的对象
         Right As Fox_Object ' 操作符右边的对象
@@ -1069,13 +1137,13 @@ Public Class Evaluator
 
                 Return New Fox_Double With {.Value = CDbl(leftVal.ToString) / CDbl(rightVal.ToString)}  '返回Fox_Double对象
             Case "<" '小于
-                Return nativeBoolToBooleanObject(leftVal < rightVal)  '返回Fox_Bool类型对象
+                Return NativeBoolToBooleanObject(leftVal < rightVal)  '返回Fox_Bool类型对象
             Case ">" '大于
-                Return nativeBoolToBooleanObject(leftVal > rightVal)  '返回Fox_Bool类型对象
+                Return NativeBoolToBooleanObject(leftVal > rightVal)  '返回Fox_Bool类型对象
             Case "==" '等于
-                Return nativeBoolToBooleanObject(leftVal = rightVal)  '返回Fox_Bool类型对象
+                Return NativeBoolToBooleanObject(leftVal = rightVal)  '返回Fox_Bool类型对象
             Case "!=", "<>" '不等于
-                Return nativeBoolToBooleanObject(leftVal <> rightVal)  '返回Fox_Bool类型对象
+                Return NativeBoolToBooleanObject(leftVal <> rightVal)  '返回Fox_Bool类型对象
             Case Else
                 '未知的操作符 : [左值] [操作符] [右值]
                 Return ThrowError($"未知的操作: {leftVal} {operator_} {rightVal}")
@@ -1083,7 +1151,7 @@ Public Class Evaluator
     End Function
 
     '求小数值
-    Public Function evalDoubleInfixExpression(
+    Public Function EvalDoubleInfixExpression(
     operator_ As String, '操作符
     Left As Fox_Object, '操作符左边的对象
     Right As Fox_Object ' 操作符右边的对象
@@ -1113,13 +1181,13 @@ Public Class Evaluator
 
                 Return New Fox_Double With {.Value = leftVal / rightVal}  '返回Fox_Double对象
             Case "<" '小于
-                Return nativeBoolToBooleanObject(leftVal < rightVal)  '返回Fox_Double对象
+                Return NativeBoolToBooleanObject(leftVal < rightVal)  '返回Fox_Double对象
             Case ">" '大于
-                Return nativeBoolToBooleanObject(leftVal > rightVal)  '返回Fox_Double对象
+                Return NativeBoolToBooleanObject(leftVal > rightVal)  '返回Fox_Double对象
             Case "==" '等于
-                Return nativeBoolToBooleanObject(leftVal = rightVal)  '返回Fox_Double对象
+                Return NativeBoolToBooleanObject(leftVal = rightVal)  '返回Fox_Double对象
             Case "!=", "<>" '不等于
-                Return nativeBoolToBooleanObject(leftVal <> rightVal)  '返回Fox_Double对象
+                Return NativeBoolToBooleanObject(leftVal <> rightVal)  '返回Fox_Double对象
             Case Else
                 '未知的操作符 : [左值] [操作符] [右值]
                 Return ThrowError($"未知的操作: {leftVal} {operator_} {rightVal}")
@@ -1128,7 +1196,7 @@ Public Class Evaluator
 
 
     '求前缀表达式的值新建 Fox_Object
-    Public Function evalPrefixExpression(operator_ As String, right As Fox_Object) As Fox_Object
+    Public Function EvalPrefixExpression(operator_ As String, right As Fox_Object) As Fox_Object
         '判断操作符并调用函数获取对应对象 
 
         '判空
@@ -1147,7 +1215,7 @@ Public Class Evaluator
         End Select
     End Function
 
-    Public Function evalMinusPrefixOperatorExpression(Right As Fox_Object) As Fox_Object
+    Public Function EvalMinusPrefixOperatorExpression(Right As Fox_Object) As Fox_Object
         Select Case Right.Type
             Case ObjectType.INTEGER_OBJ
                 Dim value As BigInteger = TryCast(Right, Fox_Integer).Value '获取数值
@@ -1193,20 +1261,20 @@ Public Class Evaluator
         End Select
     End Function
 
-    Public Function nativeBoolToBooleanObject(Input As Boolean) As Fox_Bool
+    Public Function NativeBoolToBooleanObject(Input As Boolean) As Fox_Bool
         If Input Then
             Return Fox_True
         End If
         Return Fox_False
     End Function
 
-    Public Function evalProgram(stmts As List(Of Statement), env As Environment) As Fox_Object
+    Public Function EvalProgram(stmts As List(Of Statement), env As Environment) As Fox_Object
         Dim result As Fox_Object = Nothing
 
         '遍历所有语句
         For Each s As Object In stmts
             If s.GetType <> GetType(EOLStatement) AndAlso s.Token.TokenType <> TokenType.无意义 AndAlso s.Token.TokenType <> TokenType.ILLEGAL Then
-                result = eval(s, env)
+                result = Eval(s, env)
             End If
 
             '转换result
