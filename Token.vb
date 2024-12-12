@@ -139,12 +139,14 @@ Public Class Token
 
     Public TokenType As TokenType
     Public Value As Object
+    Public Line As Long
     Public Sub New()
     End Sub
 
-    Public Sub New(arg_tokenType As TokenType, arg_value As String)
+    Public Sub New(arg_tokenType As TokenType, arg_value As String, arg_line As Long)
         TokenType = arg_tokenType
         Value = arg_value
+        Line = arg_line
     End Sub
 
 End Class
