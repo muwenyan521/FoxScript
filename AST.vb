@@ -1,6 +1,7 @@
 ﻿
-Imports System.Text
 Imports System.Numerics
+Imports System.Numerics.BigInteger
+Imports System.Text
 
 Public Interface Node
     Function TokenLiteral() As String
@@ -8,7 +9,7 @@ Public Interface Node
 End Interface
 
 Public Interface Statement : Inherits Node
-    Sub statementNode()
+    Sub StatementNode()
 End Interface
 
 '表达式
@@ -79,6 +80,15 @@ Public Class IntegerLiteral
     Public Overrides Function ToString() As String Implements Expression.ToString
         Return Token.Value
     End Function
+
+    Public Sub New()
+
+    End Sub
+
+    Public Sub New(number As BigInteger)
+        Value = number
+    End Sub
+
 End Class
 
 '双精度浮点数
@@ -209,7 +219,7 @@ Public Class DimStatement
     Public Name As Identifier '变量名
     Public Value As Expression '表达式 
 
-    Public Sub statementNode() Implements Statement.statementNode
+    Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
     End Sub
 
@@ -243,7 +253,7 @@ Public Class EOLStatement '没啥意义 End Of Line
     Public Token As Token ' TokenType | EOL 词法单元 
     Public Const Value = vbCrLf
 
-    Public Sub statementNode() Implements Statement.statementNode
+    Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
     End Sub
 
@@ -262,7 +272,7 @@ Public Class ReturnStatement
     Public Token As Token ' TokenType | RETURN_  词法单元 
     Public ReturnValue As Expression
 
-    Public Sub statementNode() Implements Statement.statementNode
+    Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
     End Sub
 
@@ -290,7 +300,7 @@ Public Class ExpressionStatement
     Public Token As Token '词法单元
     Public Expression As Expression '表达式
 
-    Public Sub statementNode() Implements Statement.statementNode
+    Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
     End Sub
 
@@ -391,6 +401,17 @@ Public Class InfixExpression '中缀表达式 比如 a / a
 
         Return sb.ToString()
     End Function
+
+    Public Sub New()
+
+    End Sub
+
+    Public Sub New(Op As String, Left As Expression, Right As Expression)
+        Me.Left = Left
+        Me.Right = Right
+        Me.Operator_ = Op
+    End Sub
+
 End Class
 
 Public Class ObjectMemberExpression '对象成员表达式 比如 a.value
@@ -432,7 +453,7 @@ Public Class ForStatement 'For 语句
     Public Items As Expression '迭代变量
     Public LoopBlock As BlockStatement '欲循环的块 
 
-    Public Sub statementNode() Implements Statement.statementNode
+    Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
     End Sub
 
@@ -563,7 +584,7 @@ Public Class WhileStatement 'While 表达式
     Public LoopCondition As Expression '循环的条件
     Public LoopBlock As BlockStatement '欲循环执行的代码
 
-    Public Sub statementNode() Implements Statement.statementNode
+    Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
     End Sub
 
@@ -591,7 +612,7 @@ Public Class ClassStatement '类语句
     Public Body As BlockStatement
     Public Name As Identifier
 
-    Public Sub statementNode() Implements Statement.statementNode
+    Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
     End Sub
 
@@ -774,7 +795,7 @@ Public Class BlockStatement
     Public Token As Token
     Public Statements As List(Of Statement) '存放所有语句的列表
 
-    Public Sub statementNode() Implements Statement.statementNode
+    Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
     End Sub
 
