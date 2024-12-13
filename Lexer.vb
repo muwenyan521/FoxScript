@@ -69,15 +69,7 @@
             Case "+"c
                 tkn = New Token(TokenType.PLUS, _readingChar, _line)
             Case "-"c
-                '如果下一个字符是数字
-                If Char.IsDigit(PeekChar()) Then
-                    '读取字符 (没有这行代码会报错 因为当前字符还是 "-" ) 
-                    ReadChar()
-                    '读取数字
-                    Dim num = "-" & ReadIntNumber()
-                    tkn = New Token(TokenType.INTNUMBER, num, _line)
-                    Return tkn
-                End If
+
 
                 tkn = New Token(TokenType.MINUS, _readingChar, _line)
             Case "*"c
