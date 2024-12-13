@@ -38,7 +38,7 @@ Public Class Evaluator
             Case GetType(IntegerLiteral) '若为整数
 
                 '返回一个 Fox_Integer类型 的对象
-                If node.Value < (Fox_256Numbers.Count - 1) Then Return Fox_256Numbers(CLng(node.Value.ToString))
+                If node.Value < (Fox_256Numbers.Count - 1) AndAlso node.Value >= 0 Then Return Fox_256Numbers(CLng(node.Value.ToString))
                 Return New Fox_Integer With {.Value = node.Value}
             Case GetType(DoubleLiteral) '若为小数
 
@@ -199,6 +199,9 @@ Public Class Evaluator
                 While TryCast(cond_obj, Fox_Bool).Value
                     '再次计算条件表达式的值
                     cond_obj = Eval(while_stmt.LoopCondition, env)
+                    If Not TryCast(cond_obj, Fox_Bool).Value Then
+                        Continue While
+                    End If
 
                     '计算While语句欲循环的代码
                     Dim r = Eval(while_stmt.LoopBlock, env)
