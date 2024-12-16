@@ -33,7 +33,10 @@ Public Class SemanticAnalyzer
                 Analysis(node.Right)
 
                 Dim handler = GetOptimizeHandler(node.Left.GetType(), node.Right.GetType)
-                If handler IsNot Nothing Then node = handler(node)
+                If handler IsNot Nothing Then
+                    Dim result = handler(node)
+                    If result IsNot Nothing Then node = result
+                End If
             Case GetType(BlockStatement) '若为代码块
                 AnalysisBlockStatement(node)
             Case GetType(IfExpression) '若为 if表达式
@@ -171,6 +174,9 @@ Public Class SemanticAnalyzer
     '获取if表达式的值 返回一个 Fox_Object 类型的对象
     Public Sub AnalysisIfExpression(if_exp As IfExpression)
         Analysis(if_exp.Condition)
+        If (TypeOf if_exp.Condition Is Bool) AndAlso (Not CType(if_exp.Condition, Bool).Value) Then
+            if_exp.Consequence.Statements.Clear()
+        End If
 
         Analysis(if_exp.Consequence)
 
@@ -215,7 +221,10 @@ Public Class SemanticAnalyzer
         Dim LiteralDictionary As New Dictionary(Of String, Expression) From {
             {"+", New IntegerLiteral With {.Value = CLng(leftVal) + CLng(rightVal)}},
             {"-", New IntegerLiteral With {.Value = CLng(leftVal) - CLng(rightVal)}},
-            {"*", New IntegerLiteral With {.Value = CLng(leftVal) * CLng(rightVal)}}
+            {"*", New IntegerLiteral With {.Value = CLng(leftVal) * CLng(rightVal)}},
+            {"==", New Bool With {.Value = CLng(leftVal) = CLng(rightVal)}},
+            {"!=", New Bool With {.Value = CLng(leftVal) <> CLng(rightVal)}},
+            {"<>", New Bool With {.Value = CLng(leftVal) <> CLng(rightVal)}}
         }
 
         If InfixExp.Operator_ = "/" Then
@@ -230,6 +239,7 @@ Public Class SemanticAnalyzer
 
             Return New DoubleLiteral With {.Value = CDec(leftVal) / CDec(rightVal)}
         Else
+            If Not LiteralDictionary.ContainsKey(InfixExp.Operator_) Then Return Nothing
             Return LiteralDictionary(InfixExp.Operator_)
         End If
 
@@ -243,12 +253,14 @@ Public Class SemanticAnalyzer
         Dim optimized_left As Expression = Nothing
 
         Dim leftHandler = GetOptimizeHandler(right.GetType(), right.GetType)
-        If leftHandler IsNot Nothing Then optimized_left = leftHandler(left)
+        If leftHandler Is Nothing Then Return leftHandler
+
+        optimized_left = leftHandler(left)
 
         Dim handler = GetOptimizeHandler(leftHandler.GetType(), right.GetType)
-        If handler IsNot Nothing Then Return handler(New InfixExpression(InfixExp.Operator_, optimized_left, right))
+        If handler Is Nothing Then Return handler
 
-        Return Nothing
+        Return handler(New InfixExpression(InfixExp.Operator_, optimized_left, right))
     End Function
 
     Public Function GetOptimizeHandler(leftType As Type, rightType As Type) As Func(Of InfixExpression, Expression)

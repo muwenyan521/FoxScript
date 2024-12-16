@@ -8,16 +8,16 @@ Public Class Evaluator
     Public Shared Fox_Nothing As New Fox_Nothing()
     Public Shared Fox_One As New Fox_Integer() With {.Value = 1}
     Public Shared Fox_Zero As New Fox_Integer() With {.Value = 0}
-    Public Fox_256Numbers As New List(Of Fox_Integer)
+    Public Fox_ConstantPool As New Dictionary(Of Object, Fox_Object)
 
     Public Sub New()
         For i = 0 To 256
-            Fox_256Numbers.Add(New Fox_Integer With {.Value = i})
+            Fox_ConstantPool.Add(i, New Fox_Integer With {.Value = i})
         Next
     End Sub
 
     '判断是否为Error对象. 返回一个布尔值
-    Public Function IsError(obj As Fox_Object)
+    Public Shared Function IsError(obj As Fox_Object)
         If obj Is Nothing Then Return False
         Return obj.Type = ObjectType.ERROR_OBJ
     End Function
@@ -38,7 +38,8 @@ Public Class Evaluator
             Case GetType(IntegerLiteral) '若为整数
 
                 '返回一个 Fox_Integer类型 的对象
-                If node.Value < (Fox_256Numbers.Count - 1) AndAlso node.Value >= 0 Then Return Fox_256Numbers(CLng(node.Value.ToString))
+                Dim num = CLng(node.Value.ToString)
+                If Tools.ContainsKey(Fox_ConstantPool, num) Then Return Tools.GetKeyValue(Fox_ConstantPool, num)
                 Return New Fox_Integer With {.Value = node.Value}
             Case GetType(DoubleLiteral) '若为小数
 
@@ -634,6 +635,12 @@ Public Class Evaluator
                 '扩展函数环境
                 Dim extendedEnv = ExtendFunctionEnv(f, args)
 
+                For Each keyPair As KeyValuePair(Of String, Fox_Object) In extendedEnv.store
+                    If TypeOf keyPair.Value Is Fox_Error Then
+                        Return keyPair.Value
+                    End If
+                Next
+
                 '对欲运行的代码求值
                 Dim evaluated = Eval(f.Body, extendedEnv)
 
@@ -663,10 +670,10 @@ Public Class Evaluator
         If func.Parameters Is Nothing Then Return env
 
         If args.Count > func.Parameters.Count Then
-            env.SetValue(func.Parameters(0).Value, ThrowError($"实参数量超过形参"))
+            env.SetValue("", ThrowError($"提供的参数数量过多"))
             Return env
         ElseIf args.Count < func.Parameters.Count Then
-            env.SetValue(func.Parameters(0).Value, ThrowError($"形参数量超过实参"))
+            env.SetValue("", ThrowError($"提供的参数数量过少"))
             Return env
         End If
 
@@ -927,6 +934,14 @@ Public Class Evaluator
                 If MinusFuncLitreal Is Nothing Then Return ThrowError($"未知的操作:{leftObject.Name.Value} {operator_} {rightObject.Name.Value}")
 
                 Dim functionObject = Eval(MinusFuncLitreal, leftObject.Env)
+                If IsError(functionObject) Then Return functionObject
+
+                Return ApplyFunction(functionObject, New List(Of Fox_Object) From {rightObject})
+            Case "*"
+                Dim MultiplyFuncLitreal As FunctionLiteral = FindFunctionLiteral("__Multiply__", leftObject.Body.Statements)
+                If MultiplyFuncLitreal Is Nothing Then Return ThrowError($"未知的操作:{leftObject.Name.Value} {operator_} {rightObject.Name.Value}")
+
+                Dim functionObject = Eval(MultiplyFuncLitreal, leftObject.Env)
                 If IsError(functionObject) Then Return functionObject
 
                 Return ApplyFunction(functionObject, New List(Of Fox_Object) From {rightObject})
@@ -1211,7 +1226,7 @@ Public Class Evaluator
             Case "!" '感叹号 表示 Not
                 Return EvalNotOperatorExpression(right) 'Bool类型
             Case "-"
-                Return evalMinusPrefixOperatorExpression(right) 'Bool或Integer类型
+                Return EvalMinusPrefixOperatorExpression(right) 'Bool或Integer类型
             Case Else
                 '信息大致内容: 未知的操作: [运算符] ,数值 [数值] 
                 Return ThrowError($"未知的操作: {operator_}. {right}")
@@ -1292,4 +1307,30 @@ Public Class Evaluator
         Return result
     End Function
 
+End Class
+
+Public Class Tools
+
+    Public Shared Function Trim(str As String)
+        Return str.Replace(vbCr, "").Replace(vbLf, "").Replace(vbCrLf, "")
+    End Function
+    Public Shared Function ContainsKey(Dict, Key) As Boolean
+        For Each k In Dict.Keys
+            If Key = k Then
+                Return True
+            End If
+        Next
+
+        Return False
+    End Function
+
+    Public Shared Function GetKeyValue(Dict, Key)
+        For Each keyPair In Dict
+            If keyPair.Key = Key Then
+                Return keyPair.Value
+            End If
+        Next
+
+        Return Nothing
+    End Function
 End Class

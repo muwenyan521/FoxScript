@@ -5,6 +5,8 @@
     Public _readingChar As Char  '当前读取的字符
     Private _line As Long = 1
     Private ReadOnly invaild_chars As New List(Of String)
+    Private ReadOnly Letters() As Char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".ToCharArray
+    Private ReadOnly Numbers() As Char = "1234567890".ToCharArray
 
     ' Lexer构造函数，初始化文本和位置
     Public Sub New(text As String)
@@ -151,7 +153,7 @@
                 End If
 
                 '如果当前字符为字母
-                If Char.IsLetter(_readingChar) OrElse _readingChar = "_" Then
+                If Letters.Contains(_readingChar) OrElse _readingChar = "_" Then
                     '读取 . Replace(vbCr,"")是为了把换行符去掉
                     Dim ident = ReadIdentifier().Replace(vbCr, "")
                     tkn = New Token(GetIdentTokenType(ident), ident, _line)
@@ -194,7 +196,7 @@
 
     Public Sub SkipWhiteSpace()
         ' OrElse _readingChar = vbCr OrElse _readingChar = vbLf OrElse _readingChar = vbCrLf
-        While _readingChar = " "c
+        While _readingChar = " "c OrElse _readingChar = vbCr OrElse _readingChar = vbLf
             ReadChar()
         End While
     End Sub
@@ -208,7 +210,7 @@
         Dim p = _pos
 
         '重复读取直到字符不是数字
-        While Char.IsDigit(_readingChar)
+        While Char.IsDigit(_readingChar) OrElse _readingChar = "&"c OrElse _readingChar = "H"c OrElse _readingChar = "x"
             ReadChar()
         End While
 

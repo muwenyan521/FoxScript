@@ -202,7 +202,7 @@ Public Class Builtins
                                                                           If Decimal.TryParse(strObj.Value, r) Then
                                                                               Return New Fox_Double With {.Value = r}
                                                                           Else
-                                                                              Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为整数")
+                                                                              Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为小数")
                                                                           End If
                                                                       Case ObjectType.NOTHINGL_OBJ
                                                                           Return New Fox_Double With {.Value = 0.0}
@@ -235,11 +235,25 @@ Public Class Builtins
 
                                                                       Case ObjectType.STRING_OBJ
                                                                           Dim strObj = TryCast(args(0), Fox_String)
-                                                                          Dim r = Nothing
-                                                                          If Long.TryParse(strObj.Value, r) Then
-                                                                              Return New Fox_Integer With {.Value = r}
+                                                                          Dim r As Long = Nothing
+                                                                          Dim strValue = strObj.Value
+
+                                                                          ' 检查是否为十六进制字符串
+                                                                          If strValue.StartsWith("&H") OrElse strValue.StartsWith("&h") OrElse strValue.StartsWith("0x") Then
+                                                                              Dim hexValue = strValue.Substring(2) ' 移除前缀
+                                                                              Try
+                                                                                  r = Convert.ToInt64(hexValue, 16) ' 将十六进制字符串转换为Long
+                                                                                  Return New Fox_Integer With {.Value = New BigInteger(r)}
+                                                                              Catch ex As Exception
+                                                                                  Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为整数")
+                                                                              End Try
                                                                           Else
-                                                                              Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为整数")
+                                                                              ' 尝试将字符串转换为Long
+                                                                              If Long.TryParse(strValue, r) Then
+                                                                                  Return New Fox_Integer With {.Value = r}
+                                                                              Else
+                                                                                  Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为整数")
+                                                                              End If
                                                                           End If
                                                                       Case ObjectType.NOTHINGL_OBJ
                                                                           Return Evaluator.Fox_Zero
@@ -400,8 +414,8 @@ Public Class Builtins
                                                                           numbers.Sort()
 
                                                                           Dim objects As New List(Of Fox_Object)
-
-                                                                          For Each sorted_number As Long In numbers
+                                                                          For i = 0 To numbers.Count - 1
+                                                                              Dim sorted_number As Long = numbers(i)
                                                                               objects.Add(New Fox_Integer With {.Value = New BigInteger(sorted_number)})
                                                                           Next
 

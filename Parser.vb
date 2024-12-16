@@ -44,6 +44,14 @@ Public Class Parser
     Private ReadOnly prefixParseFns As New Dictionary(Of TokenType, PrefixParseFunction)
     Private ReadOnly infixParseFns As New Dictionary(Of TokenType, InfixParseFunction)
 
+    Private CountDictionary As New Dictionary(Of Type, Object) From {
+        {GetType(IfExpression), 0},
+        {GetType(ForStatement), 0},
+        {GetType(WhileStatement), 0},
+        {GetType(ClassStatement), 0},
+        {GetType(FunctionLiteral), 0}
+    }
+
     Public Sub New(lexer As Lexer)
         l = lexer
         '初始化
@@ -112,7 +120,7 @@ Public Class Parser
         NextToken()
 
         '解析代码块语句并设置为 循环块
-        stmt.LoopBlock = ParseBlockStatement()
+        stmt.LoopBlock = ParseBlockStatement(stmt.GetType)
 
         If Not ExpectCur(TokenType.ENDWHILE) Then
             Return Nothing
@@ -140,7 +148,7 @@ Public Class Parser
         NextToken()
 
         '解析代码块语句并设置为类的块
-        stmt.Body = ParseBlockStatement()
+        stmt.Body = ParseBlockStatement(stmt.GetType)
 
         If Not ExpectCur(TokenType.ENDCLASS) Then
             Return Nothing
@@ -181,7 +189,7 @@ Public Class Parser
         End If
 
         '解析代码块语句并设置为 循环块
-        stmt.LoopBlock = ParseBlockStatement()
+        stmt.LoopBlock = ParseBlockStatement(stmt.GetType)
 
         If Not ExpectCur(TokenType.NEXT_) Then
             Return Nothing
@@ -338,6 +346,8 @@ Public Class Parser
         '初始化
         Dim Expression = New IfExpression With {.Token = curToken}
 
+        CountDictionary(Expression.GetType) += 1
+
         '下一个Token
         NextToken()
 
@@ -349,7 +359,7 @@ Public Class Parser
         End If
 
         '解析代码块语句并设置为 默认的块（if条件的块）
-        Expression.Consequence = ParseBlockStatement()
+        Expression.Consequence = ParseBlockStatement(Expression.GetType)
 
         '如果当前Token是ElseIf
         If CurTokenIs(TokenType.ELSEIF_) Then
@@ -365,7 +375,7 @@ Public Class Parser
         '如果当前Token是Else
         If CurTokenIs(TokenType.ELSE_) Then
             '解析代码块语句并设置为Else条件的块
-            Expression.Alternative = ParseBlockStatement()
+            Expression.Alternative = ParseBlockStatement(Expression.GetType)
         End If
 
         If Not ExpectCur(TokenType.ENDIF_, $"缺少 Endif") Then
@@ -409,7 +419,7 @@ Public Class Parser
         End If
 
         '解析代码块语句并设置为 默认的块（elseif条件的块）
-        Expression.Consequence = ParseBlockStatement()
+        Expression.Consequence = ParseBlockStatement(Expression.GetType)
 
         Return Expression
     End Function
@@ -428,7 +438,7 @@ Public Class Parser
         lit.Parameters = ParseFunctionParameters()
 
         '解析代码块并设置为函数的代码块
-        lit.Body = ParseBlockStatement()
+        lit.Body = ParseBlockStatement(lit.GetType)
 
         Return lit
     End Function
@@ -488,8 +498,25 @@ Public Class Parser
         Return Nothing '返回空
     End Function
 
+
+    ' 检查开始标记和结束标记是否匹配
+    Private Function IsMatchingEndToken(startTokenType As TokenType, endTokenType As TokenType) As Boolean
+        Dim Start_End_TokenTypeDictionary As New Dictionary(Of TokenType, TokenType) From {
+            {TokenType.IF_, TokenType.ENDIF_},
+            {TokenType.WHILE_, TokenType.ENDWHILE},
+            {TokenType.FUNC, TokenType.ENDFUNC},
+            {TokenType.CLASS_, TokenType.ENDCLASS}
+        }
+
+        If Start_End_TokenTypeDictionary.ContainsKey(startTokenType) Then
+            Return endTokenType = Start_End_TokenTypeDictionary(startTokenType)
+        End If
+
+        Return False
+    End Function
+
     '解析代码块
-    Public Function ParseBlockStatement() As BlockStatement
+    Public Function ParseBlockStatement(type As Type) As BlockStatement
         '初始化
         Dim block = New BlockStatement With {
             .Token = curToken,
@@ -499,18 +526,23 @@ Public Class Parser
         '继续下一个Token
         NextToken()
 
+        For i = 0 To CountDictionary(type)
+            NextToken()
+        Next
+
         While Not CurTokenIs(TokenType.NEXT_) AndAlso Not CurTokenIs(TokenType.ENDWHILE) AndAlso Not CurTokenIs(TokenType.ENDFUNC) AndAlso Not CurTokenIs(TokenType.ENDIF_) AndAlso Not CurTokenIs(TokenType.ELSEIF_) AndAlso Not CurTokenIs(TokenType.ELSE_) AndAlso Not CurTokenIs(TokenType.ENDCLASS) AndAlso Not CurTokenIs(TokenType.EOF)
 
-            '解析语句
-            Dim stmt = ParseStatement()
-            If stmt IsNot Nothing Then '判空
-                block.Statements.Add(stmt) '添加stmt至列表
-            End If
+                '解析语句
+                Dim stmt = ParseStatement()
+                If stmt IsNot Nothing Then '判空
+                    block.Statements.Add(stmt) '添加stmt至列表
+                End If
 
-            '继续下一个Token
-            NextToken()
-        End While
-        Return block
+                '继续下一个Token
+                NextToken()
+            End While
+
+            Return block
     End Function
 
     '...这咋说？有括号先算小括号里面的？ [绷]
@@ -729,6 +761,7 @@ ObjMemberParse:
     '解析整数表达式
     Public Function ParseNumberLiteral() As Expression
         Dim lit As Object = New IntegerLiteral With {.Token = curToken}
+        lit.Token.Value = Tools.Trim(lit.Token.Value)
 
         If PeekTokenIs(TokenType.DOT) Then
             Dim dbl_lit = New DoubleLiteral With {.Token = curToken}
@@ -756,7 +789,14 @@ ObjMemberParse:
         End If
 
         Try
-            lit.Value = BigInteger.Parse(curToken.Value.ToString.Replace(vbCr, ""))
+            If lit.Token.Value.StartsWith("&H") OrElse lit.Token.Value.StartsWith("&h") OrElse lit.Token.Value.StartsWith("0x") Then
+                lit.Token.Value = Tools.Trim(lit.Token.Value.ToString.Substring(2))
+                lit.Value = Convert.ToInt64(lit.Token.Value, 16)
+
+                GoTo additionalExp
+            End If
+
+            lit.Value = BigInteger.Parse(lit.Token.Value)
         Catch err As Exception
             Dim message = $"无法转换数值为整数, 数值: {CStr(curToken.Value)}"
             If NumberError.ErrorDictionary.ContainsKey(err.GetType) Then
@@ -767,6 +807,7 @@ ObjMemberParse:
             Return Nothing
         End Try
 
+additionalExp:
         Dim additionalExp = ParseAdditionalExpressions(lit)
         Return If(additionalExp, lit)
     End Function

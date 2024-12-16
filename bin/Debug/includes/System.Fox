@@ -47,14 +47,23 @@ Class String
 	Func Format(format_list)
  		return format(Me.Value, format_list)
  	EndFunc
- 
- 	Func __Add__(right)
+
+	Func __Add__(right)
  		Return Me.Value + right.Value
  	EndFunc
 
 	Func New(string)
 		Me.Value = string
 	EndClass
+
+	Func __Multiply__(right)
+		dim str = ""
+		for i in range(right.Value)
+			str = str + Me.Value
+		next
+
+		return str
+	EndFunc
 EndClass
 
 Class StringTools
@@ -84,6 +93,10 @@ Class Integer
 
 	Func __Minus__(right)
 		Return Me.Value - right.Value
+	EndFunc
+
+	Func __Multiply__(right)
+		Return Me.Value * right.Value
 	EndFunc
 EndClass
 
