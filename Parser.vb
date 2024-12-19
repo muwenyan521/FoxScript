@@ -45,6 +45,7 @@ Public Class Parser
     Private ReadOnly infixParseFns As New Dictionary(Of TokenType, InfixParseFunction)
 
     Private CountDictionary As New Dictionary(Of Type, Object) From {
+        {GetType(ArrayLiteral), 0},
         {GetType(IfExpression), 0},
         {GetType(ForStatement), 0},
         {GetType(WhileStatement), 0},
@@ -66,6 +67,12 @@ Public Class Parser
         prefixParseFns.Add(TokenType.ENDFUNC, AddressOf 无意义)
         prefixParseFns.Add(TokenType.ENDIF_, AddressOf 无意义)
         prefixParseFns.Add(TokenType.IN_, AddressOf 无意义)
+
+        prefixParseFns.Add(TokenType.SLASH, AddressOf ParseError_Token_SLASH)
+        prefixParseFns.Add(TokenType.PLUS, AddressOf ParseError_Token_PLUS)
+        prefixParseFns.Add(TokenType.ASTERISK, AddressOf ParseError_Token_ASTERISK)
+        'prefixParseFns.Add(TokenType.RBRACKET, AddressOf ParseError_Token_RBRACKET)
+
 
         '获取所有Token
         tokens = l.Lexer
@@ -100,6 +107,24 @@ Public Class Parser
         infixParseFns.Add(TokenType.LPAREN, AddressOf ParseCallExpression)
         infixParseFns.Add(TokenType.LBRACKET, AddressOf ParseIndexExpression)
     End Sub
+
+    Public Function ParseError_Token_RBRACKET()
+        errors.Add($"缺少""["" 在 第{curToken.Line}行")
+        Return Nothing
+    End Function
+    Public Function ParseError_Token_SLASH()
+        errors.Add($"错误的 ""/"" 在 第{curToken.Line}行")
+        Return Nothing
+    End Function
+
+    Public Function ParseError_Token_PLUS()
+        errors.Add($"错误的 ""+"" 在 第{curToken.Line}行")
+        Return Nothing
+    End Function
+    Public Function ParseError_Token_ASTERISK()
+        errors.Add($"错误的 ""*"" 在 第{curToken.Line}行")
+        Return Nothing
+    End Function
 
     '解析while语句
     Public Function ParseWhileStatement() As Statement
@@ -246,8 +271,48 @@ Public Class Parser
             .Elements = ParseExpressionList(TokenType.RBRACKET)
         }
 
+        'CountDictionary(GetType(ArrayLiteral)) += 1
+
         Dim additionalExp = ParseAdditionalExpressions(array)
         Return If(additionalExp, array)
+    End Function
+
+    Public Function ParseExpressionList(end_ As TokenType, type As Type) As List(Of Expression)
+        Dim list = New List(Of Expression)
+
+        For i = 0 To CountDictionary(type)
+            If CountDictionary(type) = 0 Then Continue For
+            NextToken()
+        Next
+
+        If CurTokenIs(end_) Then
+            Return list
+        End If
+
+        If PeekTokenIs(end_) Then
+            NextToken()
+            Return list
+        End If
+
+        NextToken()
+        list.Add(ParseExpression(优先级.LOWEST))
+
+        While PeekTokenIs(TokenType.COMMA)
+            NextToken()
+            NextToken()
+            list.Add(ParseExpression(优先级.LOWEST))
+        End While
+
+        If Not CurTokenIs(end_) Then
+            If PeekTokenIs(end_) Then
+                NextToken()
+                Return list
+            End If
+            ExpectCur(end_)
+            Return Nothing
+        End If
+
+        Return list
     End Function
 
     Public Function ParseExpressionList(end_ As TokenType) As List(Of Expression)
@@ -282,6 +347,7 @@ Public Class Parser
 
         Return list
     End Function
+
 
     Public Function ParseStringLiteral() As Expression
         Dim StrExp = New StringLiteral With {.Token = curToken, .Value = curToken.Value}
@@ -343,47 +409,54 @@ Public Class Parser
 
     '解析if表达式  
     Public Function ParseIfExpression() As Expression
-        '初始化
         Dim Expression = New IfExpression With {.Token = curToken}
 
-        CountDictionary(Expression.GetType) += 1
+        Try
+            '初始化
 
-        '下一个Token
-        NextToken()
+            '下一个Token
+            NextToken()
 
-        '解析表达式并设置为条件
-        Expression.Condition = ParseExpression(优先级.LOWEST)
+            '解析表达式并设置为条件
+            Expression.Condition = ParseExpression(优先级.LOWEST)
 
-        If Not ExpectPeek(TokenType.THEN_, $"缺少 Then") Then
+            If Not ExpectPeek(TokenType.THEN_, $"缺少 Then") OrElse Not ExpectCur(TokenType.THEN_, $"缺少 Then") Then
+                Throw New Fail
+            End If
+
+            '解析代码块语句并设置为 默认的块（if条件的块）
+            Expression.Consequence = ParseBlockStatement(Expression.GetType)
+
+            '如果当前Token是ElseIf
+            If CurTokenIs(TokenType.ELSEIF_) Then
+                '解析代码块语句并设置为ElseIf条件的块
+
+                Expression.ElseIf_List = New List(Of ElseIfExpression)
+                While Not CurTokenIs(TokenType.THEN_) AndAlso Not CurTokenIs(TokenType.ELSE_) AndAlso Not CurTokenIs(TokenType.ENDIF_) AndAlso Not CurTokenIs(TokenType.EOF)
+                    Dim elseif_exp = ParseElseIfExpression()
+                    Expression.ElseIf_List.Add(elseif_exp)
+                End While
+            End If
+
+            '如果当前Token是Else
+            If CurTokenIs(TokenType.ELSE_) Then
+                '解析代码块语句并设置为Else条件的块
+                Expression.Alternative = ParseBlockStatement(Expression.GetType)
+            End If
+
+            If Not ExpectCur(TokenType.ENDIF_, $"缺少 Endif") Then
+                Throw New Fail
+            End If
+
+            CountDictionary(Expression.GetType) += 1
+            Dim additionalExp = ParseAdditionalExpressions(Expression)
+            Return If(additionalExp, Expression)
+
+
+        Catch ex As Fail
+            CountDictionary(Expression.GetType) += 1
             Return Nothing
-        End If
-
-        '解析代码块语句并设置为 默认的块（if条件的块）
-        Expression.Consequence = ParseBlockStatement(Expression.GetType)
-
-        '如果当前Token是ElseIf
-        If CurTokenIs(TokenType.ELSEIF_) Then
-            '解析代码块语句并设置为ElseIf条件的块
-
-            Expression.ElseIf_List = New List(Of ElseIfExpression)
-            While Not CurTokenIs(TokenType.THEN_) AndAlso Not CurTokenIs(TokenType.ELSE_) AndAlso Not CurTokenIs(TokenType.ENDIF_) AndAlso Not CurTokenIs(TokenType.EOF)
-                Dim elseif_exp = ParseElseIfExpression()
-                Expression.ElseIf_List.Add(elseif_exp)
-            End While
-        End If
-
-        '如果当前Token是Else
-        If CurTokenIs(TokenType.ELSE_) Then
-            '解析代码块语句并设置为Else条件的块
-            Expression.Alternative = ParseBlockStatement(Expression.GetType)
-        End If
-
-        If Not ExpectCur(TokenType.ENDIF_, $"缺少 Endif") Then
-            Return Nothing
-        End If
-
-        Dim additionalExp = ParseAdditionalExpressions(Expression)
-        Return If(additionalExp, Expression)
+        End Try
     End Function
 
     '解析not表达式  
@@ -526,26 +599,27 @@ Public Class Parser
         '继续下一个Token
         NextToken()
 
+
         For i = 0 To CountDictionary(type)
+            If CountDictionary(type) = 0 Then Continue For
             NextToken()
         Next
 
         While Not CurTokenIs(TokenType.NEXT_) AndAlso Not CurTokenIs(TokenType.ENDWHILE) AndAlso Not CurTokenIs(TokenType.ENDFUNC) AndAlso Not CurTokenIs(TokenType.ENDIF_) AndAlso Not CurTokenIs(TokenType.ELSEIF_) AndAlso Not CurTokenIs(TokenType.ELSE_) AndAlso Not CurTokenIs(TokenType.ENDCLASS) AndAlso Not CurTokenIs(TokenType.EOF)
+            '解析语句
+            Dim stmt = ParseStatement()
+            If stmt IsNot Nothing Then '判空
+                block.Statements.Add(stmt) '添加stmt至列表
+            End If
 
-                '解析语句
-                Dim stmt = ParseStatement()
-                If stmt IsNot Nothing Then '判空
-                    block.Statements.Add(stmt) '添加stmt至列表
-                End If
+            '继续下一个Token
+            NextToken()
+        End While
 
-                '继续下一个Token
-                NextToken()
-            End While
-
-            Return block
+        Return block
     End Function
 
-    '...这咋说？有括号先算小括号里面的？ [绷]
+    '解析分组表达式
     Public Function ParseGroupedExpression() As Expression
         '继续下一个Token
         NextToken()
