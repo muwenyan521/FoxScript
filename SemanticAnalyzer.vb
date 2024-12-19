@@ -32,6 +32,11 @@ Public Class SemanticAnalyzer
                 Analysis(node.Left)
                 Analysis(node.Right)
 
+                If node.Left Is Nothing OrElse node.Right Is Nothing Then
+                    Errors.Add($"错误的表达式: 内容 {node.ToString}")
+                    Return
+                End If
+
                 Dim handler = GetOptimizeHandler(node.Left.GetType(), node.Right.GetType)
                 If handler IsNot Nothing Then
                     Dim result = handler(node)
