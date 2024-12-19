@@ -96,6 +96,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AST.vb" />
+    <Compile Include="Errors\Error.vb" />
     <Compile Include="Errors\Number.vb" />
     <Compile Include="Object\Builtins.vb" />
     <Compile Include="Object\Environment.vb" />
