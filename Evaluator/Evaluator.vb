@@ -759,7 +759,8 @@ Public Class Evaluator
         '循环遍历代码块的所有语句
         For Each s As Statement In block.Statements
             '求值
-            result = Eval(s, env)
+            Dim r = Eval(s, env)
+            If r IsNot Nothing Then result = r
 
             '判断
             If result IsNot Nothing Then
@@ -1292,7 +1293,8 @@ Public Class Evaluator
         '遍历所有语句
         For Each s As Object In stmts
             If s.GetType <> GetType(EOLStatement) AndAlso s.Token.TokenType <> TokenType.无意义 AndAlso s.Token.TokenType <> TokenType.ILLEGAL Then
-                result = Eval(s, env)
+                Dim r = Eval(s, env)
+                If r IsNot Nothing Then result = r
             End If
 
             '转换result
