@@ -196,7 +196,7 @@
 
     Public Sub SkipWhiteSpace()
         ' OrElse _readingChar = vbCr OrElse _readingChar = vbLf OrElse _readingChar = vbCrLf
-        While _readingChar = " "c OrElse _readingChar = vbCr OrElse _readingChar = vbLf
+        While _readingChar = " "c
             ReadChar()
         End While
     End Sub
