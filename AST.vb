@@ -394,9 +394,9 @@ Public Class InfixExpression '中缀表达式 比如 a / a
         Dim sb As New StringBuilder
 
         sb.Append("(")
-        sb.Append(Left.ToString())
+        sb.Append(If(Left IsNot Nothing, Left.ToString, ""))
         sb.Append(" " & Operator_ & " ")
-        sb.Append(Right.ToString().Replace(vbCr, ""))
+        sb.Append(If(Right IsNot Nothing, Right.ToString().Replace(vbCr, ""), ""))
         sb.Append(")")
 
         Return sb.ToString()
