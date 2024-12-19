@@ -175,7 +175,7 @@ Public Class Fox_Array
         Dim sb As New StringBuilder
         Dim elements_ As New List(Of String)
         For Each e As Object In Elements
-            elements_.Add(e.Inspect)
+            elements_.Add(e.Inspect())
         Next
 
         sb.Append("[")

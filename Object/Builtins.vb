@@ -21,7 +21,7 @@ Public Class Builtins
                                                                    Return New Fox_String With {.Value = r}
                                                                End If
 
-                                                               If args.Count = 0 Then
+                                                               If Not args.Count Then
                                                                    Dim r = Console.ReadLine()
                                                                    Return New Fox_String With {.Value = r}
                                                                End If
