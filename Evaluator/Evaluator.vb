@@ -1,7 +1,8 @@
-﻿Imports System.Numerics
+﻿Imports System.IO
+Imports System.Numerics
 Imports System.Windows
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement.Tab
-
+Imports System.Reflection
 Public Class Evaluator
     Public Shared Fox_True As New Fox_Bool() With {.Value = True}
     Public Shared Fox_False As New Fox_Bool() With {.Value = False}
@@ -46,7 +47,6 @@ Public Class Evaluator
                 '返回一个 Fox_Double类型 的对象
                 Return New Fox_Double With {.Value = node.Value}
             Case GetType(Bool) '若为布尔类型
-
                 '调用函数获取对应的Fox_Bool对象
                 Return NativeBoolToBooleanObject(node.Value)
             Case GetType(PrefixExpression) '前缀表达式
@@ -98,18 +98,18 @@ Public Class Evaluator
                 If IsError(value) Then Return value
 
                 '设置指定标识符的值
-                env.SetValue(dim_stmt.Name.Value, value)
+                env.SetValue(dim_stmt.Name.Value, value, dim_stmt.IsReadOnly)
             Case GetType(FunctionLiteral)
                 '获取函数名
                 Dim funcName = TryCast(node, FunctionLiteral).Name
-                env.SetValue(funcName.Value, Nothing)
+                env.SetValue(funcName.Value, Nothing, False)
 
                 '获取形参
                 Dim params = TryCast(node, FunctionLiteral).Parameters
 
                 '获取函数代码块
                 Dim body = node.Body
-                env.SetValue(funcName.Value, New Fox_Function With {.Parameters = params, .Env = env, .Body = body, .Name = funcName})
+                env.SetValue(funcName.Value, New Fox_Function With {.Parameters = params, .Env = env, .Body = body, .Name = funcName}, False)
                 '返回
                 Return env.GetValue(funcName.Value).Item1
 
@@ -176,7 +176,7 @@ Public Class Evaluator
                 '开始遍历
                 For Each __item__ As Fox_Object In TryCast(items, Fox_Array).Elements
                     '注册迭代变量
-                    env.SetValue(for_stmt.ItemVar.ToString, __item__)
+                    env.SetValue(for_stmt.ItemVar.ToString, __item__, False)
 
                     '对For语句中欲重复执行的代码进行求值
                     Dim r = Eval(for_stmt.LoopBlock, env)
@@ -287,7 +287,7 @@ Public Class Evaluator
 
                 '获取类名
                 Dim className = classStmt.Name
-                env.SetValue(className.Value, Nothing)
+                env.SetValue(className.Value, Nothing, False)
 
                 '获取类代码块
                 Dim body = classStmt.Body
@@ -311,9 +311,9 @@ Public Class Evaluator
                 Next
 
                 Eval(clsObj.Body, clsObj.Env)
-                clsObj.Env.SetValue("Me", clsObj)
+                clsObj.Env.SetValue("Me", clsObj, False)
 
-                env.SetValue(className.Value, clsObj)
+                env.SetValue(className.Value, clsObj, False)
 
                 Dim classObject = env.GetValue(className.Value).Item1
 
@@ -332,41 +332,153 @@ Public Class Evaluator
                 Dim r = Eval(objCreateExp.ObjType, env)
                 If IsError(r) Then Return r
 
-                Dim classObj As Fox_Class = r
-                Dim newObj = New Fox_Class With {.Body = classObj.Body, .Env = New Environment, .Name = classObj.Name, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments}
+                Dim newObj = Nothing
+                If r.Type = ObjectType.CLASS_OBJ Then
+                    Dim classObj As Fox_Class = r
+                    newObj = New Fox_Class With {.Body = classObj.Body, .Env = New Environment, .Name = classObj.Name, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments}
 
-                Eval(newObj.Body, newObj.Env)
-                newObj.Env.SetValue("Me", newObj)
+                    Eval(newObj.Body, newObj.Env)
+                    newObj.Env.SetValue("Me", newObj, False)
 
-                If newObj.CreateFunc IsNot Nothing Then
-                    Eval(New CallExpression With
+                    If newObj.CreateFunc IsNot Nothing Then
+                        Eval(New CallExpression With
                          {
                             .Arguments = newObj.CreateArgs,
                             .Func = newObj.CreateFunc.Name
                          },
                          newObj.Env
                     )
-                End If
+                    End If
+                ElseIf r.Type = ObjectType.VB_CLASS_OBJ Then
+                    Dim classObj As VBClass = r
+                    newObj = New VBClass With {.Env = New Environment, .Name = classObj.Name, .Members = classObj.Members, .Instance = classObj.Instance, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments}
+
+                    For Each item As Object In newObj.Members
+                        newObj.Env.SetValue(item.Name.Value, item, False)
+                    Next
+
+                    If newObj.CreateFunc IsNot Nothing Then
+                        Dim createFunction As VBFunction = newObj.CreateFunc
+                        Dim result = createFunction.Func(EvalExpressions(newObj.CreateArgs, env))
+                        If IsError(result) Then Return result
+                    End If
+                    End If
 
                 Return newObj
             Case GetType(FileImportExpression)
                 Dim fileImportExp = TryCast(node, FileImportExpression)
-                Dim className = fileImportExp.AliasName.ToString.Replace("(", "").Replace(")", "")
+                Dim className = DirectCast(fileImportExp.AliasName, Identifier).Value
 
                 Dim classObj = New Fox_Class With {.Body = New BlockStatement, .Env = New Environment, .Name = New Identifier With {.Value = className}}
                 Dim filePath As Object = Eval(fileImportExp.FilePath, env)
                 If IsError(filePath) Then Return filePath
 
                 Dim runner As New Runner With {.Mode = "FILE", .FilePath = filePath.Value}
-                classObj.Body.Statements = runner.Run(classObj.Env)
+                classObj.Body.Statements = runner.RunModule(classObj.Env)
 
-                env.SetValue(className, classObj)
+                env.SetValue(className, classObj, False)
+                Return Nothing
+            Case GetType(FromModuleImportExpression)
+                Dim fromModuleImportExp = TryCast(node, FromModuleImportExpression)
+                Dim moduleName As String = Tools.Trim(DirectCast(fromModuleImportExp.ModuleName, Identifier).Value)
+                Dim importItemName As String = Tools.Trim(DirectCast(fromModuleImportExp.ImportItem, Identifier).Value)
+                Runner.Eval($"import {moduleName}", env)
+
+                Dim moduleClass = env.GetValue($"{moduleName}").Item1
+                If IsError(moduleClass) Then Return moduleClass
+
+                If importItemName = "*" Then
+                    For Each keyPair As KeyValuePair(Of String, Data) In moduleClass.Env.store
+                        If env.store.ContainsKey(keyPair.Key) Then Continue For
+                        env.store.Add(keyPair.Key, keyPair.Value)
+                    Next
+                    env.RemoveValue(moduleName)
+
+                    Return Nothing
+                End If
+
+                Dim importItem As Fox_Object = moduleClass.Env.GetValue(importItemName).Item1
+                env.SetValue(importItemName, importItem, False)
+                env.RemoveValue(moduleName)
+
+                Return Nothing
+            Case GetType(ModuleImportExpression)
+                Dim moduleImportExp = TryCast(node, ModuleImportExpression)
+                Dim moduleName = Tools.Trim(DirectCast(moduleImportExp.ModuleName, Identifier).Value)
+
+                Dim className As String = Tools.Trim(DirectCast(If(moduleImportExp.AliasName, moduleImportExp.ModuleName), Identifier).Value)
+                Dim classObj = New Fox_Class With {.Body = New BlockStatement, .Env = New Environment, .Name = New Identifier With {.Value = className}}
+
+                Dim getModulePath = env.GetValue("ModulePath")
+                If Not getModulePath.Item2 Then Return ThrowError($"找不到库: {moduleName}")
+
+                Dim modulePath = getModulePath.Item1
+                Dim filePath = FindFile(modulePath.ToList(), moduleName, "Fox")
+                If filePath IsNot Nothing Then
+                    Dim runner As New Runner With {.Mode = "FILE", .FilePath = filePath}
+                    classObj.Body.Statements = runner.RunModule(classObj.Env)
+
+                    env.SetValue(className, classObj, False)
+                Else
+                    filePath = FindFile(modulePath.ToList(), moduleName, "Dll")
+                    If filePath Is Nothing Then Return ThrowError($"找不到库: {moduleName}")
+                End If
+
+                ' 加载程序集
+                Dim assembly As Assembly = Assembly.LoadFrom(filePath)
+
+                ' 获取要实例化的类的类型
+                Dim classType As Type = assembly.GetType($"{moduleName}.Main")
+
+                If classType Is Nothing Then Return ThrowError($"找不到类: {moduleName}.Main")
+
+                ' 创建类的实例
+                Dim instance As Object = Activator.CreateInstance(classType)
+                Dim SharedItems As IEnumerable(Of Fox_Object) = classType.GetField("SharedItems").GetValue(instance)
+
+                Dim vbClassObj = New VBClass With {
+                    .Name = New Identifier(className),
+                    .Members = New List(Of VB_Object),
+                    .Env = New Environment
+                }
+
+                For Each item As Object In SharedItems
+                    vbClassObj.Members.Add(item)
+                    vbClassObj.Env.SetValue(item.Name.Value, item, False)
+                Next
+
+                env.SetValue(className, vbClassObj, False)
+                Return Nothing
         End Select
 
         Return Nothing
     End Function
 
-    Public Function FindFunctionLiteral(Name As String, Statements As List(Of Statement))
+
+
+    Public Function FindFile(folderPaths As List(Of String), fileName As String, fileExtension As String) As String
+        For Each folderPath As String In folderPaths
+            Dim filePath = $"{folderPath}\{fileName}.{fileExtension}".Replace("""", "")
+            If Not File.Exists(filePath) Then Continue For
+
+            Return filePath
+        Next
+
+        Return Nothing
+    End Function
+
+    Public Function FindFolder(folderPaths As List(Of String), folderName As String) As String
+        For Each folderPath As String In folderPaths
+            Dim dirPath = $"{folderPath}\{folderName}".Replace("""", "")
+            If Not Directory.Exists(dirPath) Then Continue For
+
+            Return dirPath
+        Next
+
+        Return Nothing
+    End Function
+
+    Public Function FindFunctionLiteral(Name As String, Statements As List(Of Statement)) As FunctionLiteral
         Dim Stmts = FindAllStatement(Statements, GetType(ExpressionStatement))
         Dim expStmts As New List(Of ExpressionStatement)
         For Each stmt As ExpressionStatement In Stmts
@@ -403,8 +515,8 @@ Public Class Evaluator
                 End If
 
                 '将环境中标识符的值修改
-                env.SetValue(ident.Value, Eval(valueExp, env))
-
+                Dim result = env.SetValue(ident.Value, Eval(valueExp, env), False)
+                If TypeOf result Is Fox_Error Then Return result
             Case GetType(ObjectMemberExpression)
                 Dim ObjectMemberExp = TryCast(SetExp, ObjectMemberExpression)
                 Dim ClassObject As Object = Eval(ObjectMemberExp.Left, env)
@@ -412,8 +524,8 @@ Public Class Evaluator
 
                 Dim name = ObjectMemberExp.Right.ToString.Replace(" ", "")
                 Dim value = Eval(valueExp, env)
-                ClassObject.Env.SetValue(name, value)
-                ClassObject.Env.SetValue("Me", ClassObject)
+                ClassObject.Env.SetValue(name, value, False)
+                ClassObject.Env.SetValue("Me", ClassObject, False)
 
         End Select
 
@@ -465,10 +577,14 @@ Public Class Evaluator
     Public Function EvalObjectMemberExpression(leftObject As Fox_Object, rightExp As Expression, ByRef env As Environment)
         Select Case leftObject.Type
             Case ObjectType.CLASS_OBJ
-                Dim classObj = TryCast(leftObject, Fox_Class)
+                Dim classObj As Fox_Class = leftObject
 
                 Dim result = Eval(rightExp, classObj.Env)
+                Return result
+            Case ObjectType.VB_CLASS_OBJ
+                Dim vbClassObj As VBClass = leftObject
 
+                Dim result = Eval(rightExp, vbClassObj.Env)
                 Return result
         End Select
 
@@ -627,17 +743,17 @@ Public Class Evaluator
     End Function
     Public Function ApplyFunction(func As Fox_Object, args As List(Of Fox_Object)) As Fox_Object
 
-        Select Case func.GetType
-            Case GetType(Fox_Function)
+        Select Case func.Type
+            Case ObjectType.FUNCTION_OBJ
                 '如果是Fox_Function 将对象转为 Fox_Function 对象
                 Dim f = TryCast(func, Fox_Function)
 
                 '扩展函数环境
                 Dim extendedEnv = ExtendFunctionEnv(f, args)
 
-                For Each keyPair As KeyValuePair(Of String, Fox_Object) In extendedEnv.store
-                    If TypeOf keyPair.Value Is Fox_Error Then
-                        Return keyPair.Value
+                For Each keyPair As KeyValuePair(Of String, Data) In extendedEnv.store
+                    If TypeOf keyPair.Value.FoxObject Is Fox_Error Then
+                        Return keyPair.Value.FoxObject
                     End If
                 Next
 
@@ -646,12 +762,18 @@ Public Class Evaluator
 
                 '解包返回函数
                 Return UnwrapReturnValue(evaluated)
-            Case GetType(Fox_Builtin)
+            Case ObjectType.BUILTIN_OBJ
                 '若为Fox_Builtin，将对象转换为Fox_Builtin对象
                 Dim builtin = TryCast(func, Fox_Builtin)
 
                 '调用原生函数并返回它的值
                 Return builtin.BuiltinFunction(args)
+            Case ObjectType.VB_FUNCTION_OBJ
+                Dim vbFunction = TryCast(func, VBFunction)
+                Dim result = vbFunction.Func(args)
+                If IsError(result) Then Return result
+
+                Return result
             Case Else
                 Return ThrowError($"不是一个函数: { func.Type}")
         End Select
@@ -670,15 +792,15 @@ Public Class Evaluator
         If func.Parameters Is Nothing Then Return env
 
         If args.Count > func.Parameters.Count Then
-            env.SetValue("", ThrowError($"提供的参数数量过多"))
+            env.SetValue("", ThrowError($"提供的参数数量过多"), True)
             Return env
         ElseIf args.Count < func.Parameters.Count Then
-            env.SetValue("", ThrowError($"提供的参数数量过少"))
+            env.SetValue("", ThrowError($"提供的参数数量过少"), True)
             Return env
         End If
 
         For parmaIndex = 0 To func.Parameters.Count - 1
-            env.SetValue(func.Parameters(parmaIndex).Value, args(parmaIndex))
+            env.SetValue(func.Parameters(parmaIndex).Value, args(parmaIndex), False)
         Next
 
         If class_functioncall.Item2 Then
@@ -920,21 +1042,21 @@ Public Class Evaluator
         Dim leftObject As Fox_Class = Left
         Dim rightObject As Fox_Class = Right
 
-
+        Dim functionObject = Nothing
         Select Case operator_
             Case "+"
                 Dim AddFuncLitreal As FunctionLiteral = FindFunctionLiteral("__Add__", leftObject.Body.Statements)
                 If AddFuncLitreal Is Nothing Then Return ThrowError($"未知的操作:{leftObject.Name.Value} {operator_} {rightObject.Name.Value}")
 
-                Dim functionObject = Eval(AddFuncLitreal, leftObject.Env)
+                functionObject = Eval(AddFuncLitreal, leftObject.Env)
                 If IsError(functionObject) Then Return functionObject
 
                 Return ApplyFunction(functionObject, New List(Of Fox_Object) From {rightObject})
             Case "-"
-                Dim MinusFuncLitreal As FunctionLiteral = FindFunctionLiteral("__Minus__", leftObject.Body.Statements)
+                Dim MinusFuncLitreal As FunctionLiteral = FindFunctionLiteral("__Subtract__", leftObject.Body.Statements)
                 If MinusFuncLitreal Is Nothing Then Return ThrowError($"未知的操作:{leftObject.Name.Value} {operator_} {rightObject.Name.Value}")
 
-                Dim functionObject = Eval(MinusFuncLitreal, leftObject.Env)
+                functionObject = Eval(MinusFuncLitreal, leftObject.Env)
                 If IsError(functionObject) Then Return functionObject
 
                 Return ApplyFunction(functionObject, New List(Of Fox_Object) From {rightObject})
@@ -942,12 +1064,21 @@ Public Class Evaluator
                 Dim MultiplyFuncLitreal As FunctionLiteral = FindFunctionLiteral("__Multiply__", leftObject.Body.Statements)
                 If MultiplyFuncLitreal Is Nothing Then Return ThrowError($"未知的操作:{leftObject.Name.Value} {operator_} {rightObject.Name.Value}")
 
-                Dim functionObject = Eval(MultiplyFuncLitreal, leftObject.Env)
+                functionObject = Eval(MultiplyFuncLitreal, leftObject.Env)
                 If IsError(functionObject) Then Return functionObject
 
                 Return ApplyFunction(functionObject, New List(Of Fox_Object) From {rightObject})
-        End Select
+            Case "/"
+                Dim DivideFuncLitreal As FunctionLiteral = FindFunctionLiteral("__Divide__", leftObject.Body.Statements)
+                If DivideFuncLitreal Is Nothing Then Return ThrowError($"未知的操作:{leftObject.Name.Value} {operator_} {rightObject.Name.Value}")
 
+                functionObject = Eval(DivideFuncLitreal, leftObject.Env)
+                If IsError(functionObject) Then Return functionObject
+
+                Return ApplyFunction(functionObject, New List(Of Fox_Object) From {rightObject})
+            Case Else
+                Return ThrowError($"未知的操作: {TryCast(Left, Fox_Class).Name.Value} {operator_} {TryCast(Right, Fox_Class).Name.Value}")
+        End Select
     End Function
     Private Function GetType_ConvertHandlers(leftType As ObjectType, rightType As ObjectType) As Func(Of IEnumerable(Of Object), Object)
         If leftType = ObjectType.NOTHINGL_OBJ AndAlso rightType = ObjectType.NOTHINGL_OBJ Then Return Builtins.builtinFuncs("CNothing").BuiltinFunction
@@ -1314,7 +1445,7 @@ End Class
 Public Class Tools
 
     Public Shared Function Trim(str As String)
-        Return str.Replace(vbCr, "").Replace(vbLf, "").Replace(vbCrLf, "")
+        Return str.Replace(vbCr, "").Replace(vbLf, "").Replace(vbCrLf, "").Replace(" ", "")
     End Function
     Public Shared Function ContainsKey(Dict, Key) As Boolean
         For Each k In Dict.Keys
