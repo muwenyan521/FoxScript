@@ -91,15 +91,38 @@ Class Integer
 		Return Me.Value + right.Value
 	EndFunc
 
-	Func __Minus__(right)
+	Func __Subtract__(right)
 		Return Me.Value - right.Value
 	EndFunc
 
 	Func __Multiply__(right)
 		Return Me.Value * right.Value
 	EndFunc
+
+	Func __Divide__(right)
+		Return Me.Value / right.Value
+	EndFunc
 EndClass
 
 Class Double
+	Dim Value = 0.0
+	Func New(double_num)
+		Me.Value = double_num
+	EndFunc
 
+	Func __Add__(right)
+		Return Me.Value + right.Value
+	EndFunc
+
+	Func __Subtract__(right)
+		Return Me.Value - right.Value
+	EndFunc
+
+	Func __Multiply__(right)
+		Return Me.Value * right.Value
+	EndFunc
+
+	Func __Divide__(right)
+		Return Me.Value / right.Value
+	EndFunc
 EndClass
