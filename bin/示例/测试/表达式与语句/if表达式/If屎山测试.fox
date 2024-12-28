@@ -1,0 +1,27 @@
+Class Player
+    Dim Moving
+    Dim Running
+    Dim Jumping
+EndClass
+
+dim a = New Player()
+a.Moving = True
+a.Running = True
+a.Jumping = True
+
+dim b = New Player()
+b.Moving = True
+
+if a.Moving then
+    if a.Running then
+        if a.Jumping then
+            print("OK")
+        endif
+    endif
+endif
+
+if b.Moving then
+    print("OK * 2")
+endif
+
+input()
