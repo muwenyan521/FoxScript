@@ -529,6 +529,28 @@ Public Class Builtins
 
                                                               Return Evaluator.Fox_Nothing
                                                           End Function}},
+        {"Eval", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
+                                                              Dim 所需实参数 = 1
+
+                                                              If args.Count > 所需实参数 Then
+                                                                  Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                              End If
+
+                                                              If args.Count < 所需实参数 Then
+                                                                  Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                              End If
+
+                                                              If args.Count = 所需实参数 Then
+                                                                  Select Case args(0).Type()
+                                                                      Case ObjectType.STRING_OBJ
+                                                                          Return Runner.Eval(args(0).Value, New Environment)
+                                                                      Case Else
+                                                                          Return Evaluator.ThrowError($"Eval函数不支持{args(0).Type()}类型")
+                                                                  End Select
+                                                              End If
+
+                                                              Return Evaluator.Fox_Nothing
+                                                          End Function}},
         {"replace", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                                  Dim 所需实参数 = 3
 
