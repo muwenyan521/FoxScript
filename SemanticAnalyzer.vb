@@ -29,13 +29,13 @@ Public Class SemanticAnalyzer
 
                 If prefixExp.Right Is Nothing Then Errors.Add($"{prefixExp.Operator_} 后面应为表达式 在第{prefixExp.Token.Line}行")
             Case GetType(InfixExpression) '中缀表达式
-                Analysis(node.Left)
-                Analysis(node.Right)
-
                 If node.Left Is Nothing OrElse node.Right Is Nothing Then
                     Errors.Add($"错误的表达式: 内容 {node.ToString}")
                     Return
                 End If
+
+                Analysis(node.Left)
+                Analysis(node.Right)
 
                 Dim handler = GetOptimizeHandler(node.Left.GetType(), node.Right.GetType)
                 If handler IsNot Nothing Then
@@ -220,16 +220,18 @@ Public Class SemanticAnalyzer
     End Function
 
     Public Function OptimizeIntegerInfixExpression(InfixExp As InfixExpression) As Expression
+        If Not ((TypeOf InfixExp.Left Is IntegerLiteral) AndAlso (TypeOf InfixExp.Right Is IntegerLiteral)) Then Return Nothing
+
         Dim leftVal = CType(InfixExp.Left, Object).Value.ToString
         Dim rightVal = CType(InfixExp.Right, Object).Value.ToString
 
         Dim LiteralDictionary As New Dictionary(Of String, Expression) From {
-            {"+", New IntegerLiteral With {.Value = CLng(leftVal) + CLng(rightVal)}},
-            {"-", New IntegerLiteral With {.Value = CLng(leftVal) - CLng(rightVal)}},
-            {"*", New IntegerLiteral With {.Value = CLng(leftVal) * CLng(rightVal)}},
-            {"==", New Bool With {.Value = CLng(leftVal) = CLng(rightVal)}},
-            {"!=", New Bool With {.Value = CLng(leftVal) <> CLng(rightVal)}},
-            {"<>", New Bool With {.Value = CLng(leftVal) <> CLng(rightVal)}}
+            {"+", New IntegerLiteral With {.Value = BigInteger.Parse(leftVal) + BigInteger.Parse(rightVal)}},
+            {"-", New IntegerLiteral With {.Value = BigInteger.Parse(leftVal) - BigInteger.Parse(rightVal)}},
+            {"*", New IntegerLiteral With {.Value = BigInteger.Parse(leftVal) * BigInteger.Parse(rightVal)}},
+            {"==", New Bool With {.Value = BigInteger.Parse(leftVal) = BigInteger.Parse(rightVal)}},
+            {"!=", New Bool With {.Value = BigInteger.Parse(leftVal) <> BigInteger.Parse(rightVal)}},
+            {"<>", New Bool With {.Value = BigInteger.Parse(leftVal) <> BigInteger.Parse(rightVal)}}
         }
 
         If InfixExp.Operator_ = "/" Then
@@ -239,7 +241,7 @@ Public Class SemanticAnalyzer
             End If
 
             If CDec(rightVal) = 1 Then
-                Return New DoubleLiteral With {.Value = CDec(leftVal)}
+                Return InfixExp.Left
             End If
 
             Return New DoubleLiteral With {.Value = CDec(leftVal) / CDec(rightVal)}
