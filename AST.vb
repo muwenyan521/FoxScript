@@ -47,7 +47,6 @@ Public Class Identifier
     Implements Expression '为了继承而继承
     Public Token As Token ' IDENT 词法单元 
     Public Value As String '标识符的值
-    Public IsReadOnly As Boolean = False
 
     Public Sub ExpressionNode() Implements Expression.ExpressionNode
         Throw New NotImplementedException()
@@ -61,6 +60,13 @@ Public Class Identifier
     Public Overrides Function ToString() As String Implements Expression.ToString
         Return Value
     End Function
+
+    Public Sub New()
+    End Sub
+
+    Public Sub New(Name As String)
+        Value = Name
+    End Sub
 End Class
 
 '整数
@@ -218,6 +224,7 @@ Public Class DimStatement
     Public Token As Token ' DIM_ 词法单元 
     Public Name As Identifier '变量名
     Public Value As Expression '表达式 
+    Public IsReadOnly As Boolean = False '是否只读
 
     Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
@@ -721,6 +728,73 @@ Public Class ObjectCreateExpression
     End Function
 End Class
 
+'模块导入表达式
+Public Class ModuleImportExpression
+    Implements Expression
+    Public Token As Token ' Import 词法单元
+    Public ModuleName As Expression ' 模块名
+    Public AliasName As Expression '别名
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        '返回的大概内容:
+        'Import [模块名] As [别名]
+        'Import [模块名] 
+        Dim sb As New StringBuilder
+
+        sb.Append("Import")
+        sb.Append(" ")
+        sb.Append($"{ModuleName.ToString}")
+
+        If AliasName IsNot Nothing Then
+            sb.Append(" ")
+            sb.Append("As")
+            sb.Append(" ")
+            sb.Append(AliasName.ToString)
+        End If
+
+        Return sb.ToString
+    End Function
+End Class
+
+
+'模块导入表达式 | From ... Import ... 
+Public Class FromModuleImportExpression
+    Implements Expression
+    Public Token As Token 'Import 词法单元
+    Public ModuleName As Expression '模块名
+    Public ImportItem As Expression '导入项
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        '返回的大概内容:
+        'From [模块名] Import [导入项] 
+        Dim sb As New StringBuilder
+
+        sb.Append("From")
+        sb.Append(" ")
+        sb.Append($"{ModuleName.ToString}")
+
+        sb.Append(" ")
+        sb.Append("Import")
+        sb.Append(" ")
+        sb.Append(ImportItem.ToString)
+
+        Return sb.ToString
+    End Function
+End Class
 
 '文件导入表达式
 Public Class FileImportExpression
@@ -738,11 +812,11 @@ Public Class FileImportExpression
 
     Public Overrides Function ToString() As String Implements Node.ToString
         '返回的大概内容:
-        'Import [路径] As [别名]
+        'Include [路径] As [别名]
 
         Dim sb As New StringBuilder
 
-        sb.Append("Import")
+        sb.Append("Include")
         sb.Append(" ")
         sb.Append($"""{FilePath.ToString}""")
         sb.Append(" ")
@@ -812,6 +886,24 @@ Public Class BlockStatement
         Next
 
         Return sb.ToString
+    End Function
+End Class
+
+Public Class Comment
+    Implements Expression
+    Public Token As Token 'SingleQuote 词法单元
+    Public Text As Expression '注释内容
+
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        Return $"'{Text.ToString}"
     End Function
 End Class
 
