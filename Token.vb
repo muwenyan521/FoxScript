@@ -7,57 +7,67 @@ Public Enum TokenType
     MINUS ' - 
     ASTERISK ' *
     SLASH ' / 
+
     ASSIGN ' =
-    COMMA ' 逗号(,)
     EQ '==
     NOT_EQ ' !=
-    AMPERSAND ' &
+
     IDENT
     ILLEGAL
-    BANG '符号 !
+
+    COMMA ' 逗号(,)
+    AMPERSAND ' &
     LT ' "<" 小于
     GT ' ">" 大于
+    SEMICOLON ' 分号(;)
+
     DIM_ 'Dim 定义变量
+    LET_
     RETURN_
+
     CR ' \r
     LF ' \n
     CRLF '\r\n
-    SEMICOLON ' 分号(;)
     EOL ' End of line
-    LPAREN '左括号
-    RPAREN '右括号
-    'Type
+
+
     BOOL_NOT ' Not
     BOOL_AND ' And （AndAlso）
     BOOL_OR ' Or (OrElse)
+    BANG '符号 !
     BOOL_TRUE
     BOOL_FALSE
+
     INTNUMBER ' integer 123456
     DOBLENUMBER ' double 3.14
     STRING_ ' "aaa"
-    'if
+
     IF_
     THEN_
     ELSEIF_
     ELSE_
     ENDIF_
-    EOF
-    'func
+
     FUNC
     ENDFUNC
-    'class
+
+    NEW_
     CLASS_
     ENDCLASS
 
+    LPAREN '左括号 (
+    RPAREN '右括号 )
     LBRACKET '[
     RBRACKET ']
     LBRACE '{
     RBRACE '}
+
     COLON '冒号 ":"
     DOT '点 ","
 
     PUBLIC_ 'Public
     PRIVATE_ 'Private
+    READONLY_
 
     FOR_
     IN_
@@ -67,16 +77,14 @@ Public Enum TokenType
     ENDWHILE
 
     NOTHING_
-
-    NEW_
-
-    READONLY_
-
-    IMPORT
     AS_
     SingleQuote
 
-    LET_
+    INCLUDE
+    IMPORT
+    FROM
+
+    EOF
 End Enum
 
 Public Class Token
@@ -124,16 +132,76 @@ Public Class Token
         {"ENDCLASS", TokenType.ENDCLASS},
         {"PUBLIC", TokenType.PUBLIC_},
         {"PRIVATE", TokenType.PRIVATE_},
+        {"READONLY", TokenType.READONLY_},
         {"FOR", TokenType.FOR_},
         {"IN", TokenType.IN_},
         {"NEXT", TokenType.NEXT_},
         {"WHILE", TokenType.WHILE_},
         {"ENDWHILE", TokenType.ENDWHILE},
         {"NEW", TokenType.NEW_},
+        {"INCLUDE", TokenType.INCLUDE},
         {"IMPORT", TokenType.IMPORT},
+        {"FROM", TokenType.FROM},
         {"AS", TokenType.AS_},
         {"LET", TokenType.LET_},
         {vbNullChar, TokenType.EOF}
+    }
+
+    Public Shared StringDict As New Dictionary(Of TokenType, String) From
+    {
+        {TokenType.COLON, ":"},
+        {TokenType.DOT, "."},
+        {TokenType.LBRACKET, "["},
+        {TokenType.RBRACKET, "]"},
+        {TokenType.LBRACE, "{"},
+        {TokenType.RBRACE, "}"},
+        {TokenType.PLUS, "+"},
+        {TokenType.MINUS, "-"},
+        {TokenType.ASTERISK, "*"},
+        {TokenType.SLASH, "/"},
+        {TokenType.ASSIGN, "="},
+        {TokenType.EQ, "=="},
+        {TokenType.NOT_EQ, "!="},
+        {TokenType.DIM_, "Dim"},
+        {TokenType.BANG, "!"},
+        {TokenType.BOOL_NOT, "Not"},
+        {TokenType.LT, "<"},
+        {TokenType.GT, ">"},
+        {TokenType.SEMICOLON, ";"},
+        {TokenType.EOL, "换行符"},
+        {TokenType.IDENT, "标识符"},
+        {TokenType.BOOL_TRUE, "True"},
+        {TokenType.BOOL_FALSE, "False"},
+        {TokenType.RETURN_, "Return"},
+        {TokenType.LPAREN, "("},
+        {TokenType.RPAREN, ")"},
+        {TokenType.IF_, "If"},
+        {TokenType.BOOL_AND, "And"},
+        {TokenType.BOOL_OR, "Or"},
+        {TokenType.THEN_, "Then"},
+        {TokenType.ELSEIF_, "Elseif"},
+        {TokenType.ELSE_, "Else"},
+        {TokenType.ENDIF_, "EndIf"},
+        {TokenType.FUNC, "Func"},
+        {TokenType.ENDFUNC, "EndFunc"},
+        {TokenType.COMMA, ","},
+        {TokenType.CLASS_, "Class"},
+        {TokenType.ENDCLASS, "EndClass"},
+        {TokenType.PUBLIC_, "PUBLIC"},
+        {TokenType.PRIVATE_, "PRIVATE"},
+        {TokenType.READONLY_， "READONLY"},
+        {TokenType.FOR_, "For"},
+        {TokenType.IN_, "In"},
+        {TokenType.NEXT_, "Next"},
+        {TokenType.WHILE_, "While"},
+        {TokenType.ENDWHILE, "EndWhile"},
+        {TokenType.NEW_, "New"},
+        {TokenType.INCLUDE, "Include"},
+        {TokenType.IMPORT, "Import"},
+        {TokenType.FROM, "From"},
+        {TokenType.AS_, "As"},
+        {TokenType.LET_, "Let"},
+        {TokenType.EOF, "文件结束"}
     }
 
 
