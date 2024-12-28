@@ -17,6 +17,8 @@ Public Enum ObjectType
     DICTIONARY_OBJ '字典
     NOTHINGL_OBJ ' NOTHING
     CLASS_OBJ ' CLASS
+    VB_FUNCTION_OBJ ' VBFunction
+    VB_CLASS_OBJ ' VBClass
 End Enum
 
 'True和False 没啥好介绍的，比较鸡肋
@@ -72,7 +74,11 @@ Public Interface Fox_Object
 
 End Interface
 
+Public Interface VB_Object
+    Inherits Fox_Object
+End Interface
 
+'FoxScript的DictionaryItem类型
 Public Interface Fox_DictionaryItem
     Inherits Fox_Object
     Function GetKey() As Fox_DictionaryKey
@@ -185,6 +191,9 @@ Public Class Fox_Array
         Return sb.ToString()
     End Function
 
+    Public Function ToList() As List(Of String)
+        Return Elements.Select(Function(e) If(TypeOf e Is String, TryCast(e, Fox_String).Value, e.Inspect)).ToList
+    End Function
 End Class
 
 
@@ -309,6 +318,13 @@ Public Class Fox_Error
     Public Function Inspect() As String Implements Fox_Object.Inspect
         Return $"Error: {Message}"
     End Function
+
+    Public Sub New(Message As String)
+        Me.Message = Message
+    End Sub
+
+    Public Sub New()
+    End Sub
 End Class
 
 'FoxScript的Function类型 
@@ -353,7 +369,6 @@ End Class
 Public Class Fox_Class
     '继承Object
     Implements Fox_Object
-    'Public Parameters As List(Of Identifier)
     Public Body As BlockStatement
     Public Env As Environment
     Public Name As Identifier
@@ -380,4 +395,52 @@ Public Class Fox_Class
 
         Return sb.ToString
     End Function
+End Class
+
+
+'VBClass类型 
+Public Class VBClass
+    '继承Object
+    Implements VB_Object
+    Public Name As Identifier
+    Public CreateFunc As VBFunction
+    Public CreateArgs As List(Of Expression)
+    Public Members As List(Of VB_Object)
+    Public Env As Environment
+    Public Instance
+
+    Public Function Type() As ObjectType Implements Fox_Object.Type
+        '返回Class类型
+        Return ObjectType.VB_CLASS_OBJ
+    End Function
+
+    Public Function Inspect() As String Implements Fox_Object.Inspect
+        Return Nothing
+    End Function
+
+End Class
+
+'VBFunction类型 
+Public Class VBFunction
+    '继承Object
+    Implements VB_Object
+    Public Func As Func(Of IEnumerable(Of Object), Object)
+    Public Name As Identifier
+    Public Function Type() As ObjectType Implements Fox_Object.Type
+        '返回Class类型
+        Return ObjectType.VB_FUNCTION_OBJ
+    End Function
+
+    Public Function Inspect() As String Implements Fox_Object.Inspect
+        Return Nothing
+    End Function
+
+    Public Sub New(Name As String, Func As Func(Of IEnumerable(Of Object), Object))
+        Me.Name = New Identifier With {.Value = Name}
+        Me.Func = Func
+    End Sub
+
+    Public Sub New()
+
+    End Sub
 End Class
