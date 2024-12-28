@@ -1,0 +1,2 @@
+Import IO 
+IO.Console.WriteLine("Hello, World!")
