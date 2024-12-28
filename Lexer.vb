@@ -10,6 +10,7 @@
 
     ' Lexer构造函数，初始化文本和位置
     Public Sub New(text As String)
+
         '初始化
         _code = text
         _pos = 0
@@ -71,8 +72,6 @@
             Case "+"c
                 tkn = New Token(TokenType.PLUS, _readingChar, _line)
             Case "-"c
-
-
                 tkn = New Token(TokenType.MINUS, _readingChar, _line)
             Case "*"c
                 tkn = New Token(TokenType.ASTERISK, _readingChar, _line)
@@ -115,7 +114,7 @@
                     tkn = New Token(TokenType.LT, _readingChar, _line)
                 End If
 
-            Case vbCrLf
+            Case vbCrLf, vbLf, vbCr
                 tkn = New Token(TokenType.EOL, vbCrLf, _line)
             Case ">"c
                 tkn = New Token(TokenType.GT, _readingChar, _line)
@@ -153,7 +152,7 @@
                 End If
 
                 '如果当前字符为字母
-                If Letters.Contains(_readingChar) OrElse _readingChar = "_" Then
+                If Letters.Contains(_readingChar) OrElse _readingChar = "_" OrElse IsChineseCharacter(_readingChar) Then
                     '读取 . Replace(vbCr,"")是为了把换行符去掉
                     Dim ident = ReadIdentifier().Replace(vbCr, "")
                     tkn = New Token(GetIdentTokenType(ident), ident, _line)
@@ -252,7 +251,7 @@
 
         '坑爹vb.net (艹皿艹 )
         '重复读取直到字符不是字母 或者 下划线 
-        While (Char.IsLetter(_readingChar) OrElse _readingChar = "_" OrElse IsChineseCharacter(_readingChar) OrElse Char.IsDigit(_readingChar))
+        While Char.IsLetter(_readingChar) OrElse _readingChar = "_" OrElse IsChineseCharacter(_readingChar) OrElse Char.IsDigit(_readingChar)
             ReadChar()
         End While
 

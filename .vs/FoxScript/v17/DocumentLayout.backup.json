@@ -3,12 +3,18 @@
   "WorkspaceRootPath": "D:\\soft\\FoxScript\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|d:\\soft\\foxscript\\object\\builtins.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:object\\builtins.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+      "AbsoluteMoniker": "D:0:0:{DED0349A-B7D4-475E-ACAD-83BFD1D85B66}|..\\IO\\IO.vbproj|d:\\soft\\io\\main.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\parser.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:parser.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|d:\\soft\\foxscript\\object\\object.vb||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:object\\object.vb||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|d:\\soft\\foxscript\\evaluator\\evaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:evaluator\\evaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DED0349A-B7D4-475E-ACAD-83BFD1D85B66}|..\\IO\\IO.vbproj|d:\\soft\\io\\shared\\filereader.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,7 +24,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 11,
+          "SelectedChildIndex": 12,
           "Children": [
             {
               "$type": "Bookmark",
@@ -66,28 +72,55 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Builtins.vb",
-              "DocumentMoniker": "D:\\soft\\FoxScript\\Object\\Builtins.vb",
-              "RelativeDocumentMoniker": "Object\\Builtins.vb",
-              "ToolTip": "D:\\soft\\FoxScript\\Object\\Builtins.vb",
-              "RelativeToolTip": "Object\\Builtins.vb",
-              "ViewState": "AgIAABABAAAAAAAAAAAAwAAAAAAAAAAAAAAAAA==",
+              "DocumentIndex": 3,
+              "Title": "FileReader.vb",
+              "DocumentMoniker": "D:\\soft\\IO\\Shared\\FileReader.vb",
+              "RelativeDocumentMoniker": "..\\IO\\Shared\\FileReader.vb",
+              "ToolTip": "D:\\soft\\IO\\Shared\\FileReader.vb",
+              "RelativeToolTip": "..\\IO\\Shared\\FileReader.vb",
+              "ViewState": "AgIAACYAAAAAAAAAAAAYwDEAAAAgAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2024-12-19T11:58:28.208Z",
+              "WhenOpened": "2024-12-28T04:05:04.995Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Main.vb",
+              "DocumentMoniker": "D:\\soft\\IO\\Main.vb",
+              "RelativeDocumentMoniker": "..\\IO\\Main.vb",
+              "ToolTip": "D:\\soft\\IO\\Main.vb",
+              "RelativeToolTip": "..\\IO\\Main.vb",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAABQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
+              "WhenOpened": "2024-12-28T03:26:33.673Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "Parser.vb",
-              "DocumentMoniker": "D:\\soft\\FoxScript\\Parser.vb",
-              "RelativeDocumentMoniker": "Parser.vb",
-              "ToolTip": "D:\\soft\\FoxScript\\Parser.vb",
-              "RelativeToolTip": "Parser.vb",
-              "ViewState": "AgIAAMUCAAAAAAAAAAAAADsAAAA8AAAAAAAAAA==",
+              "Title": "Object.vb",
+              "DocumentMoniker": "D:\\soft\\FoxScript\\Object\\Object.vb",
+              "RelativeDocumentMoniker": "Object\\Object.vb",
+              "ToolTip": "D:\\soft\\FoxScript\\Object\\Object.vb",
+              "RelativeToolTip": "Object\\Object.vb",
+              "ViewState": "AgIAAKkBAAAAAAAAAAAAwLcBAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2024-12-19T11:37:08.992Z"
+              "WhenOpened": "2024-12-28T03:20:00.653Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Evaluator.vb",
+              "DocumentMoniker": "D:\\soft\\FoxScript\\Evaluator\\Evaluator.vb",
+              "RelativeDocumentMoniker": "Evaluator\\Evaluator.vb",
+              "ToolTip": "D:\\soft\\FoxScript\\Evaluator\\Evaluator.vb",
+              "RelativeToolTip": "Evaluator\\Evaluator.vb",
+              "ViewState": "AgIAAO0CAAAAAAAAAAAiwAQDAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
+              "WhenOpened": "2024-12-28T02:27:50.939Z",
+              "EditorCaption": ""
             }
           ]
         }
