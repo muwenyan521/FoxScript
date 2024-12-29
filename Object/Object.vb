@@ -19,6 +19,7 @@ Public Enum ObjectType
     CLASS_OBJ ' CLASS
     VB_FUNCTION_OBJ ' VBFunction
     VB_CLASS_OBJ ' VBClass
+    VB_MEMBER_OBJ ' VBMember
 End Enum
 
 'True和False 没啥好介绍的，比较鸡肋
@@ -244,6 +245,12 @@ Public Class Fox_Integer
     Public Function Inspect() As String Implements Fox_Object.Inspect
         Return Value.ToString
     End Function
+
+    Public Sub New()
+    End Sub
+    Public Sub New(number As BigInteger)
+        Value = number
+    End Sub
 End Class
 
 'FoxScript的ReturnValue类型 
@@ -438,6 +445,32 @@ Public Class VBFunction
     Public Sub New(Name As String, Func As Func(Of IEnumerable(Of Object), Object))
         Me.Name = New Identifier With {.Value = Name}
         Me.Func = Func
+    End Sub
+
+    Public Sub New()
+
+    End Sub
+End Class
+
+
+'VBMember类型 
+Public Class VBMember
+    '继承Object
+    Implements VB_Object
+    Public Value As Object
+    Public Name As Identifier
+    Public Function Type() As ObjectType Implements Fox_Object.Type
+        '返回Class类型
+        Return ObjectType.VB_MEMBER_OBJ
+    End Function
+
+    Public Function Inspect() As String Implements Fox_Object.Inspect
+        Return Value.ToString
+    End Function
+
+    Public Sub New(Name As String, Value As Object)
+        Me.Name = New Identifier With {.Value = Name}
+        Me.Value = Value
     End Sub
 
     Public Sub New()
