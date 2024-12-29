@@ -35,9 +35,9 @@ Public Class InfixExpressionEvaluator
     ' 实现接口的 Eval 方法
     Public Function Eval(ParamArray Args() As Object) As Fox_Object Implements IEvaluatorHandler.Eval
         If Args.Length = 3 AndAlso TypeOf Args(0) Is String AndAlso TypeOf Args(1) Is Fox_Object AndAlso TypeOf Args(2) Is Fox_Object Then
-            Return ThrowError("参数错误")
-        Else
             Return Eval(DirectCast(Args(0), String), DirectCast(Args(1), Fox_Object), DirectCast(Args(2), Fox_Object))
+        Else
+            Return ThrowError("参数错误")
         End If
     End Function
 
