@@ -1,5 +1,7 @@
 ﻿Imports System.Numerics
 Imports System.Runtime.InteropServices
+
+Imports FoxScript.NumberError
 Public Class SemanticAnalyzer
     Private Errors As New List(Of String)
     Private infixFunctionsDictionary As New Dictionary(Of Type, Func(Of InfixExpression, Expression)) From {
@@ -225,30 +227,34 @@ Public Class SemanticAnalyzer
         Dim leftVal = CType(InfixExp.Left, Object).Value.ToString
         Dim rightVal = CType(InfixExp.Right, Object).Value.ToString
 
-        Dim LiteralDictionary As New Dictionary(Of String, Expression) From {
-            {"+", New IntegerLiteral With {.Value = BigInteger.Parse(leftVal) + BigInteger.Parse(rightVal)}},
-            {"-", New IntegerLiteral With {.Value = BigInteger.Parse(leftVal) - BigInteger.Parse(rightVal)}},
-            {"*", New IntegerLiteral With {.Value = BigInteger.Parse(leftVal) * BigInteger.Parse(rightVal)}},
-            {"==", New Bool With {.Value = BigInteger.Parse(leftVal) = BigInteger.Parse(rightVal)}},
-            {"!=", New Bool With {.Value = BigInteger.Parse(leftVal) <> BigInteger.Parse(rightVal)}},
-            {"<>", New Bool With {.Value = BigInteger.Parse(leftVal) <> BigInteger.Parse(rightVal)}}
-        }
+        Try
+            Dim LiteralDictionary As New Dictionary(Of String, Expression) From {
+                {"+", New IntegerLiteral With {.Value = BigInteger.Parse(leftVal) + BigInteger.Parse(rightVal)}},
+                {"-", New IntegerLiteral With {.Value = BigInteger.Parse(leftVal) - BigInteger.Parse(rightVal)}},
+                {"*", New IntegerLiteral With {.Value = BigInteger.Parse(leftVal) * BigInteger.Parse(rightVal)}},
+                {"==", New Bool With {.Value = BigInteger.Parse(leftVal) = BigInteger.Parse(rightVal)}},
+                {"!=", New Bool With {.Value = BigInteger.Parse(leftVal) <> BigInteger.Parse(rightVal)}},
+                {"<>", New Bool With {.Value = BigInteger.Parse(leftVal) <> BigInteger.Parse(rightVal)}}
+            }
 
-        If InfixExp.Operator_ = "/" Then
-            If CDec(rightVal) = 0 Then
-                Errors.Add($"除数不能为0")
-                Return Nothing
+            If InfixExp.Operator_ = "/" Then
+                If CDec(rightVal) = 0 Then
+                    Errors.Add($"除数不能为0")
+                    Return Nothing
+                End If
+
+                If CDec(rightVal) = 1 Then
+                    Return InfixExp.Left
+                End If
+
+                Return New DoubleLiteral With {.Value = CDec(leftVal) / CDec(rightVal)}
+            Else
+                If Not LiteralDictionary.ContainsKey(InfixExp.Operator_) Then Return Nothing
+                Return LiteralDictionary(InfixExp.Operator_)
             End If
-
-            If CDec(rightVal) = 1 Then
-                Return InfixExp.Left
-            End If
-
-            Return New DoubleLiteral With {.Value = CDec(leftVal) / CDec(rightVal)}
-        Else
-            If Not LiteralDictionary.ContainsKey(InfixExp.Operator_) Then Return Nothing
-            Return LiteralDictionary(InfixExp.Operator_)
-        End If
+        Catch ex As OverflowException
+            Errors.Add($"无法解析数值，因为 ""{ErrorDictionary(ex.GetType)}""")
+        End Try
 
         Return Nothing
     End Function
