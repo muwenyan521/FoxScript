@@ -3,16 +3,16 @@
   "WorkspaceRootPath": "D:\\soft\\FoxScript\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\evaluator\\evaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\evaluator\\infixexpressionevaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:evaluator\\infixexpressionevaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|d:\\soft\\foxscript\\evaluator\\evaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:evaluator\\evaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\object\\object.vb||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:object\\object.vb||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\evaluator\\infixexpressionevaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:evaluator\\infixexpressionevaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\utils.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
@@ -23,7 +23,7 @@
       "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:object\\builtins.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|d:\\soft\\foxscript\\parser.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\parser.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:parser.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
@@ -50,7 +50,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 14,
+          "SelectedChildIndex": 13,
           "Children": [
             {
               "$type": "Bookmark",
@@ -124,33 +124,33 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "InfixExpressionEvaluator.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Evaluator\\InfixExpressionEvaluator.vb",
               "RelativeDocumentMoniker": "Evaluator\\InfixExpressionEvaluator.vb",
               "ToolTip": "D:\\soft\\FoxScript\\Evaluator\\InfixExpressionEvaluator.vb",
               "RelativeToolTip": "Evaluator\\InfixExpressionEvaluator.vb",
-              "ViewState": "AgIAAFUAAAAAAAAAAADwv0wAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAABkAAAAAAAAAAAASwCQAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2024-12-29T03:15:46.923Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "Evaluator.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Evaluator\\Evaluator.vb",
               "RelativeDocumentMoniker": "Evaluator\\Evaluator.vb",
               "ToolTip": "D:\\soft\\FoxScript\\Evaluator\\Evaluator.vb",
               "RelativeToolTip": "Evaluator\\Evaluator.vb",
-              "ViewState": "AgIAAPQBAAAAAAAAAAAiwAMCAAAUAAAAAAAAAA==",
+              "ViewState": "AgIAACQBAAAAAAAAAAAAAAMCAAAUAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2024-12-28T02:27:50.939Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Object.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Object\\Object.vb",
               "RelativeDocumentMoniker": "Object\\Object.vb",
