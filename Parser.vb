@@ -69,8 +69,6 @@ Public Class Parser
 
         prefixParseFns.Add(TokenType.SLASH, AddressOf ParseError_Token_SLASH)
         prefixParseFns.Add(TokenType.PLUS, AddressOf ParseError_Token_PLUS)
-        'prefixParseFns.Add(TokenType.ASTERISK, AddressOf ParseError_Token_ASTERISK)
-        'prefixParseFns.Add(TokenType.RBRACKET, AddressOf ParseError_Token_RBRACKET)
 
 
         '获取所有Token
@@ -896,7 +894,7 @@ ObjMemberParse:
     '解析整数表达式
     Public Function ParseNumberLiteral() As Expression
         Dim lit As Object = New IntegerLiteral With {.Token = curToken}
-        lit.Token.Value = Tools.Trim(lit.Token.Value)
+        lit.Token.Value = Trim(lit.Token.Value)
 
         If PeekTokenIs(TokenType.DOT) Then
             Dim dbl_lit = New DoubleLiteral With {.Token = curToken}
@@ -925,7 +923,7 @@ ObjMemberParse:
 
         Try
             If lit.Token.Value.StartsWith("&H") OrElse lit.Token.Value.StartsWith("&h") OrElse lit.Token.Value.StartsWith("0x") Then
-                lit.Token.Value = Tools.Trim(lit.Token.Value.ToString.Substring(2))
+                lit.Token.Value = Trim(lit.Token.Value.ToString.Substring(2))
                 lit.Value = Convert.ToInt64(lit.Token.Value, 16)
 
                 GoTo additionalExp

@@ -98,6 +98,7 @@
     <Compile Include="AST.vb" />
     <Compile Include="Errors\Error.vb" />
     <Compile Include="Errors\Number.vb" />
+    <Compile Include="Evaluator\InfixExpressionEvaluator.vb" />
     <Compile Include="Object\Builtins.vb" />
     <Compile Include="Object\Environment.vb" />
     <Compile Include="Evaluator\Evaluator.vb" />
@@ -123,6 +124,7 @@
     <Compile Include="Parser.vb" />
     <Compile Include="SemanticAnalyzer.vb" />
     <Compile Include="Token.vb" />
+    <Compile Include="Utils.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="My Project\Resources.resx">

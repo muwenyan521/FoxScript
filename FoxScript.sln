@@ -5,10 +5,6 @@ VisualStudioVersion = 17.11.35303.130
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "FoxScript", "FoxScript.vbproj", "{DAA98288-D937-407A-BD81-AFDBF2B32C36}"
 EndProject
-Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "FoxScript.Test", "..\FoxScript.Test\FoxScript.Test.vbproj", "{95431A72-AE68-46C0-A98C-44869A50DC25}"
-EndProject
-Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "IO", "..\IO\IO.vbproj", "{DED0349A-B7D4-475E-ACAD-83BFD1D85B66}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,14 +15,6 @@ Global
 		{DAA98288-D937-407A-BD81-AFDBF2B32C36}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DAA98288-D937-407A-BD81-AFDBF2B32C36}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DAA98288-D937-407A-BD81-AFDBF2B32C36}.Release|Any CPU.Build.0 = Release|Any CPU
-		{95431A72-AE68-46C0-A98C-44869A50DC25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{95431A72-AE68-46C0-A98C-44869A50DC25}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{95431A72-AE68-46C0-A98C-44869A50DC25}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{95431A72-AE68-46C0-A98C-44869A50DC25}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DED0349A-B7D4-475E-ACAD-83BFD1D85B66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DED0349A-B7D4-475E-ACAD-83BFD1D85B66}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DED0349A-B7D4-475E-ACAD-83BFD1D85B66}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DED0349A-B7D4-475E-ACAD-83BFD1D85B66}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

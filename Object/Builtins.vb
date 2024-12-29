@@ -4,6 +4,14 @@ Imports System.Reflection
 Imports System.Runtime.InteropServices
 Imports System.Text
 
+Imports FoxScript.Evaluator
+Imports FoxScript.Utils
+Imports FoxScript.BooleanUtils
+Imports FoxScript.FileSystemUtils
+Imports FoxScript.StringUtils
+Imports FoxScript.ErrorUtils
+Imports FoxScript.StatementUtils
+
 Public Class Builtins
     Public Shared AppPath = AppDomain.CurrentDomain.BaseDirectory
     Public Shared builtinFuncs As New Dictionary(Of String, Fox_Builtin) From
@@ -12,7 +20,7 @@ Public Class Builtins
                                                                Dim 所需实参数 = 1
 
                                                                If args.Count > 所需实参数 Then
-                                                                   Return Evaluator.ThrowError($"实参过多")
+                                                                   Return ThrowError($"实参过多")
                                                                End If
 
                                                                If args.Count = 所需实参数 Then
@@ -27,7 +35,7 @@ Public Class Builtins
                                                                End If
 
                                                                If args.Count < 所需实参数 Then
-                                                                   Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                   Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                End If
 
                                                                Return Nothing
@@ -36,11 +44,11 @@ Public Class Builtins
                                                              Dim 所需实参数 = 1
 
                                                              If args.Count > 所需实参数 Then
-                                                                 Return Evaluator.ThrowError($"实参过多")
+                                                                 Return ThrowError($"实参过多")
                                                              End If
 
                                                              If args.Count < 所需实参数 Then
-                                                                 Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                 Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                              End If
 
                                                              If args.Count = 所需实参数 Then
@@ -50,7 +58,7 @@ Public Class Builtins
                                                                      Case ObjectType.ARRAY_OBJ
                                                                          Return New Fox_Integer With {.Value = CLng(TryCast(args(0), Fox_Array).Elements.Count)}
                                                                      Case Else
-                                                                         Return Evaluator.ThrowError($"len函数不支持{args(0).Type()}类型")
+                                                                         Return ThrowError($"len函数不支持{args(0).Type()}类型")
                                                                  End Select
                                                              End If
 
@@ -60,7 +68,7 @@ Public Class Builtins
                                                                Dim 所需实参数 = 1
 
                                                                If args.Count > 所需实参数 Then
-                                                                   Return Evaluator.ThrowError($"实参过多")
+                                                                   Return ThrowError($"实参过多")
                                                                End If
 
                                                                If args.Count = 所需实参数 AndAlso args(0) IsNot Nothing Then
@@ -72,7 +80,7 @@ Public Class Builtins
                                                                End If
 
                                                                If args.Count < 所需实参数 Then
-                                                                   Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                   Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                End If
 
                                                                Return Nothing
@@ -81,7 +89,7 @@ Public Class Builtins
                                                                    Dim 所需实参数 = 1
 
                                                                    If args.Count > 所需实参数 Then
-                                                                       Return Evaluator.ThrowError($"实参过多")
+                                                                       Return ThrowError($"实参过多")
                                                                    End If
 
                                                                    If args.Count = 所需实参数 AndAlso args(0) IsNot Nothing Then
@@ -112,12 +120,12 @@ Public Class Builtins
                                                                                mainMethod.Invoke(Nothing, Nothing)
                                                                            End If
                                                                        Else
-                                                                           Return Evaluator.ThrowError($"类型错误: 参数{1}类型为{args(0).Type()}")
+                                                                           Return ThrowError($"类型错误: 参数{1}类型为{args(0).Type()}")
                                                                        End If
                                                                    End If
 
                                                                    If args.Count < 所需实参数 Then
-                                                                       Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                       Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                    End If
 
 
@@ -127,11 +135,11 @@ Public Class Builtins
                                                                 Dim 所需实参数 = 2
 
                                                                 If args.Count > 所需实参数 Then
-                                                                    Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                    Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                                 End If
 
                                                                 If args.Count < 所需实参数 Then
-                                                                    Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                    Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                 End If
 
                                                                 If args.Count = 所需实参数 Then
@@ -144,7 +152,7 @@ Public Class Builtins
                                                                         Case GetType(Fox_Bool)
                                                                             msg = args(0).Value.ToString
                                                                         Case Else
-                                                                            Return Evaluator.ThrowError($"MsgBox函数不支持{args(0).Type()}类型")
+                                                                            Return ThrowError($"MsgBox函数不支持{args(0).Type()}类型")
                                                                     End Select
 
                                                                     Select Case args(1).GetType()
@@ -155,18 +163,18 @@ Public Class Builtins
                                                                         Case GetType(Fox_Bool)
                                                                             title = args(1).Value.ToString
                                                                         Case Else
-                                                                            Return Evaluator.ThrowError($"MsgBox函数不支持{args(1).Type()}类型")
+                                                                            Return ThrowError($"MsgBox函数不支持{args(1).Type()}类型")
                                                                     End Select
 
                                                                     MsgBox(msg,, title)
                                                                 End If
 
-                                                                Return Evaluator.Fox_Nothing
+                                                                Return Obj_Nothing
                                                             End Function}},
         {"clear", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                                Dim 所需实参数 = 0
                                                                If args.Count > 所需实参数 Then
-                                                                   Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                   Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                                End If
 
                                                                If args.Count = 所需实参数 Then
@@ -182,11 +190,11 @@ Public Class Builtins
                                                               Dim 所需实参数 = 1
 
                                                               If args.Count > 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count < 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
                                                               If args.Count = 所需实参数 Then
                                                                   Select Case args(0).Type()
@@ -202,26 +210,26 @@ Public Class Builtins
                                                                           If Decimal.TryParse(strObj.Value, r) Then
                                                                               Return New Fox_Double With {.Value = r}
                                                                           Else
-                                                                              Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为小数")
+                                                                              Return ThrowError($"无法转换 {strObj.Value} 为小数")
                                                                           End If
                                                                       Case ObjectType.NOTHINGL_OBJ
                                                                           Return New Fox_Double With {.Value = 0.0}
                                                                       Case Else
-                                                                          Return Evaluator.ThrowError($"CDbl函数不支持{args(0).Type()}类型")
+                                                                          Return ThrowError($"CDbl函数不支持{args(0).Type()}类型")
                                                                   End Select
                                                               End If
 
-                                                              Return Evaluator.Fox_Nothing
+                                                              Return Obj_Nothing
                                                           End Function}},
         {"CInt", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                               Dim 所需实参数 = 1
 
                                                               If args.Count > 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count < 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count = 所需实参数 Then
@@ -245,38 +253,38 @@ Public Class Builtins
                                                                                   r = Convert.ToInt64(hexValue, 16) ' 将十六进制字符串转换为Long
                                                                                   Return New Fox_Integer With {.Value = New BigInteger(r)}
                                                                               Catch ex As Exception
-                                                                                  Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为整数")
+                                                                                  Return ThrowError($"无法转换 {strObj.Value} 为整数")
                                                                               End Try
                                                                           Else
                                                                               ' 尝试将字符串转换为Long
                                                                               If Long.TryParse(strValue, r) Then
                                                                                   Return New Fox_Integer With {.Value = r}
                                                                               Else
-                                                                                  Return Evaluator.ThrowError($"无法转换 {strObj.Value} 为整数")
+                                                                                  Return ThrowError($"无法转换 {strObj.Value} 为整数")
                                                                               End If
                                                                           End If
                                                                       Case ObjectType.NOTHINGL_OBJ
-                                                                          Return Evaluator.Fox_Zero
+                                                                          Return Fox_Zero
                                                                       Case Else
-                                                                          Return Evaluator.ThrowError($"CInt函数不支持{args(0).Type()}类型")
+                                                                          Return ThrowError($"CInt函数不支持{args(0).Type()}类型")
                                                                   End Select
                                                               End If
 
-                                                              Return Evaluator.Fox_Nothing
+                                                              Return Obj_Nothing
                                                           End Function}},
         {"CBool", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                                Dim 所需实参数 = 1
 
                                                                If args.Count > 所需实参数 Then
-                                                                   Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                   Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                                End If
 
                                                                If args.Count < 所需实参数 Then
-                                                                   Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                   Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                End If
 
                                                                If args.Count = 所需实参数 Then
-                                                                   If args(0) Is Nothing Then Return Evaluator.ThrowError($"CBool函数不支{Evaluator.Fox_Nothing.Type}类型")
+                                                                   If args(0) Is Nothing Then Return ThrowError($"CBool函数不支{Obj_Nothing.Type}类型")
 
                                                                    Select Case TryCast(args(0), Fox_Object).Type
                                                                        Case ObjectType.INTEGER_OBJ, ObjectType.DOUBLE_OBJ
@@ -284,29 +292,29 @@ Public Class Builtins
                                                                        Case ObjectType.BOOL_OBJ
                                                                            Return args(0)
                                                                        Case ObjectType.STRING_OBJ
-                                                                           Return If(TryCast(args(0), Fox_String).Value <> "", Evaluator.Fox_True, Evaluator.Fox_False)
+                                                                           Return If(TryCast(args(0), Fox_String).Value <> "", Fox_True, Fox_False)
                                                                        Case ObjectType.ARRAY_OBJ
                                                                            Return New Fox_Bool With {.Value = TryCast(args(0), Fox_Array).Elements.Any}
                                                                        Case ObjectType.DICTIONARY_OBJ
                                                                            Return New Fox_Bool With {.Value = TryCast(args(0), Fox_Dictionary).Pairs.Any}
                                                                        Case ObjectType.NOTHINGL_OBJ
-                                                                           Return Evaluator.Fox_False
+                                                                           Return Fox_False
                                                                        Case Else
-                                                                           Return Evaluator.ThrowError($"CInt函数不支持{args(0).Type()}类型")
+                                                                           Return ThrowError($"CInt函数不支持{args(0).Type()}类型")
                                                                    End Select
                                                                End If
 
-                                                               Return Evaluator.Fox_Nothing
+                                                               Return Obj_Nothing
                                                            End Function}},
         {"CStr", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                               Dim 所需实参数 = 1
 
                                                               If args.Count > 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count < 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count = 所需实参数 Then
@@ -320,55 +328,45 @@ Public Class Builtins
                                                                       Case ObjectType.NOTHINGL_OBJ
                                                                           Return New Fox_String With {.Value = ""}
                                                                       Case Else
-                                                                          Return Evaluator.ThrowError($"CStr函数不支持{args(0).Type()}类型")
+                                                                          Return ThrowError($"CStr函数不支持{args(0).Type()}类型")
                                                                   End Select
                                                               End If
 
-                                                              Return Evaluator.Fox_Nothing
+                                                              Return Obj_Nothing
                                                           End Function}},
         {"CArray", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                                 Dim 所需实参数 = 1
 
                                                                 If args.Count > 所需实参数 Then
-                                                                    Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                    Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                                 End If
 
                                                                 If args.Count < 所需实参数 Then
-                                                                    Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                    Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                 End If
 
                                                                 If args.Count = 所需实参数 Then
                                                                     Select Case args(0).Type()
-                                                                        Case ObjectType.STRING_OBJ
-                                                                            Dim stringObject = TryCast(args(0), Fox_String)
-                                                                            Dim stringList = stringObject.Value.ToList
-
-                                                                            Dim arrayObject As New Fox_Array With {.Elements = New List(Of Fox_Object)}
-                                                                            For Each str As String In stringList
-                                                                                arrayObject.Elements.Add(New Fox_String With {.Value = str})
-                                                                            Next
-
-                                                                            Return arrayObject
                                                                         Case ObjectType.ARRAY_OBJ
                                                                             Return args(0)
                                                                         Case ObjectType.NOTHINGL_OBJ
                                                                             Return New Fox_Array With {.Elements = New List(Of Fox_Object)}
                                                                         Case Else
-                                                                            Return Evaluator.ThrowError($"CStr函数不支持{args(0).Type()}类型")
+                                                                            Return ThrowError($"CStr函数不支持{args(0).Type()}类型")
                                                                     End Select
                                                                 End If
 
-                                                                Return Evaluator.Fox_Nothing
+                                                                Return Obj_Nothing
                                                             End Function}},
         {"range", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                                Dim 所需实参数 = 1
 
                                                                If args.Count > 所需实参数 Then
-                                                                   Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                   Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                                End If
 
                                                                If args.Count < 所需实参数 Then
-                                                                   Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                   Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                End If
 
                                                                If args.Count = 所需实参数 Then
@@ -380,25 +378,25 @@ Public Class Builtins
                                                                                    arr.Elements.Add(New Fox_Integer With {.Value = i})
                                                                                Next
                                                                            Catch ex As OutOfMemoryException
-                                                                               Return Evaluator.ThrowError($"内存溢出! {ex.Message}")
+                                                                               Return ThrowError($"内存溢出! {ex.Message}")
                                                                            End Try
                                                                            Return arr
                                                                        Case Else
-                                                                           Return Evaluator.ThrowError($"range函数不支持{args(0).Type()}类型")
+                                                                           Return ThrowError($"range函数不支持{args(0).Type()}类型")
                                                                    End Select
                                                                End If
 
-                                                               Return Evaluator.Fox_Nothing
+                                                               Return Obj_Nothing
                                                            End Function}},
         {"Sort", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                               Dim 所需实参数 = 1
 
                                                               If args.Count > 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count < 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count = 所需实参数 Then
@@ -421,34 +419,34 @@ Public Class Builtins
 
                                                                           Return New Fox_Array With {.Elements = objects}
                                                                       Case Else
-                                                                          Return Evaluator.ThrowError($"BubbleSort函数不支持{args(0).Type()}类型")
+                                                                          Return ThrowError($"BubbleSort函数不支持{args(0).Type()}类型")
                                                                   End Select
                                                               End If
 
-                                                              Return Evaluator.Fox_Nothing
+                                                              Return Obj_Nothing
                                                           End Function}},
         {"CNothing", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                                   Dim 所需实参数 = 1
 
                                                                   If args.Count > 所需实参数 Then
-                                                                      Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                      Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                                   End If
 
                                                                   If args.Count < 所需实参数 Then
-                                                                      Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                      Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                   End If
 
-                                                                  Return Evaluator.Fox_Nothing
+                                                                  Return Obj_Nothing
                                                               End Function}},
         {"Chr", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                              Dim 所需实参数 = 1
 
                                                              If args.Count > 所需实参数 Then
-                                                                 Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                 Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                              End If
 
                                                              If args.Count < 所需实参数 Then
-                                                                 Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                 Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                              End If
 
                                                              If args.Count = 所需实参数 Then
@@ -456,21 +454,21 @@ Public Class Builtins
                                                                      Case ObjectType.INTEGER_OBJ
                                                                          Return New Fox_String With {.Value = Chr(CLng(args(0).Value.ToString))}
                                                                      Case Else
-                                                                         Return Evaluator.ThrowError($"Chr函数不支持{args(0).Type()}类型")
+                                                                         Return ThrowError($"Chr函数不支持{args(0).Type()}类型")
                                                                  End Select
                                                              End If
 
-                                                             Return Evaluator.Fox_Nothing
+                                                             Return Obj_Nothing
                                                          End Function}},
         {"Asc", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                              Dim 所需实参数 = 1
 
                                                              If args.Count > 所需实参数 Then
-                                                                 Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                 Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                              End If
 
                                                              If args.Count < 所需实参数 Then
-                                                                 Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                 Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                              End If
 
                                                              If args.Count = 所需实参数 Then
@@ -479,21 +477,21 @@ Public Class Builtins
                                                                      Case ObjectType.STRING_OBJ
                                                                          Return New Fox_Integer With {.Value = Asc(CChar(args(0).Value))}
                                                                      Case Else
-                                                                         Return Evaluator.ThrowError($"Asc函数不支持{args(0).Type()}类型")
+                                                                         Return ThrowError($"Asc函数不支持{args(0).Type()}类型")
                                                                  End Select
                                                              End If
 
-                                                             Return Evaluator.Fox_Nothing
+                                                             Return Obj_Nothing
                                                          End Function}},
         {"AscW", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                               Dim 所需实参数 = 1
 
                                                               If args.Count > 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count < 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count = 所需实参数 Then
@@ -501,21 +499,21 @@ Public Class Builtins
                                                                       Case ObjectType.STRING_OBJ
                                                                           Return New Fox_Integer With {.Value = AscW(CChar(args(0).Value))}
                                                                       Case Else
-                                                                          Return Evaluator.ThrowError($"AscW函数不支持{args(0).Type()}类型")
+                                                                          Return ThrowError($"AscW函数不支持{args(0).Type()}类型")
                                                                   End Select
                                                               End If
 
-                                                              Return Evaluator.Fox_Nothing
+                                                              Return Obj_Nothing
                                                           End Function}},
         {"ChrW", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                               Dim 所需实参数 = 1
 
                                                               If args.Count > 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count < 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count = 所需实参数 Then
@@ -523,21 +521,21 @@ Public Class Builtins
                                                                       Case ObjectType.INTEGER_OBJ
                                                                           Return New Fox_String With {.Value = ChrW(CLng(args(0).Value.ToString))}
                                                                       Case Else
-                                                                          Return Evaluator.ThrowError($"ChrW函数不支持{args(0).Type()}类型")
+                                                                          Return ThrowError($"ChrW函数不支持{args(0).Type()}类型")
                                                                   End Select
                                                               End If
 
-                                                              Return Evaluator.Fox_Nothing
+                                                              Return Obj_Nothing
                                                           End Function}},
         {"Eval", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                               Dim 所需实参数 = 1
 
                                                               If args.Count > 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count < 所需实参数 Then
-                                                                  Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                  Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                               End If
 
                                                               If args.Count = 所需实参数 Then
@@ -545,27 +543,27 @@ Public Class Builtins
                                                                       Case ObjectType.STRING_OBJ
                                                                           Return Runner.Eval(args(0).Value, New Environment)
                                                                       Case Else
-                                                                          Return Evaluator.ThrowError($"Eval函数不支持{args(0).Type()}类型")
+                                                                          Return ThrowError($"Eval函数不支持{args(0).Type()}类型")
                                                                   End Select
                                                               End If
 
-                                                              Return Evaluator.Fox_Nothing
+                                                              Return Obj_Nothing
                                                           End Function}},
         {"replace", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                                  Dim 所需实参数 = 3
 
                                                                  If args.Count > 所需实参数 Then
-                                                                     Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                     Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                                  End If
 
                                                                  If args.Count < 所需实参数 Then
-                                                                     Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                     Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                  End If
 
                                                                  If args.Count = 所需实参数 Then
                                                                      For Each arg As Fox_Object In args
                                                                          If arg.Type <> ObjectType.STRING_OBJ Then
-                                                                             Return Evaluator.ThrowError($"类型错误: 在参数{args.ToList.IndexOf(arg) + 1} 中传入了一个{arg.Type}类型的参数")
+                                                                             Return ThrowError($"类型错误: 在参数{args.ToList.IndexOf(arg) + 1} 中传入了一个{arg.Type}类型的参数")
                                                                          End If
                                                                      Next
 
@@ -576,24 +574,24 @@ Public Class Builtins
                                                                      Return New Fox_String With {.Value = args(0).Value.ToString.Replace(args(1).Value, args(2).Value)}
                                                                  End If
 
-                                                                 Return Evaluator.Fox_Nothing
+                                                                 Return Obj_Nothing
                                                              End Function}},
         {"format", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                                 Dim 所需实参数 = 2
 
                                                                 If args.Count > 所需实参数 Then
-                                                                    Return Evaluator.ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
+                                                                    Return ThrowError($"实参过多 实参{args.Count}个 形参{所需实参数}个")
                                                                 End If
 
                                                                 If args.Count < 所需实参数 Then
-                                                                    Return Evaluator.ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                    Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
                                                                 End If
 
                                                                 If args.Count = 所需实参数 Then
                                                                     If args(0).Type() <> ObjectType.STRING_OBJ Then
-                                                                        Return Evaluator.ThrowError($"类型错误: 在参数{1} 中传入了一个{args(0).Type}类型的参数")
+                                                                        Return ThrowError($"类型错误: 在参数{1} 中传入了一个{args(0).Type}类型的参数")
                                                                     ElseIf args(1).Type() <> ObjectType.ARRAY_OBJ Then
-                                                                        Return Evaluator.ThrowError($"类型错误: 在参数{2} 中传入了一个{args(1).Type}类型的参数")
+                                                                        Return ThrowError($"类型错误: 在参数{2} 中传入了一个{args(1).Type}类型的参数")
                                                                     End If
 
                                                                     If args(0).Value = "" Then
@@ -616,7 +614,7 @@ Public Class Builtins
 
                                                                 End If
 
-                                                                Return Evaluator.Fox_Nothing
+                                                                Return Obj_Nothing
                                                             End Function}}
     }
     Public Shared builtinVars As New Dictionary(Of String, Fox_Builtin) From
