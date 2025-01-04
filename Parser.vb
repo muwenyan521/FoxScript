@@ -4,6 +4,7 @@ Imports System.Numerics
 Public Enum 优先级
     无意义
     LOWEST
+    OBJ_INHERITS
     EQUALS      '//== 
     LESSGREATER '// > Or <
     SUM         '// + 
@@ -76,6 +77,7 @@ Public Class Parser
 
         '注册前缀符
 
+        prefixParseFns.Add(TokenType.THROW_, AddressOf ParseThrowErrorExpression)
         prefixParseFns.Add(TokenType.SingleQuote, AddressOf ParseComment)
         prefixParseFns.Add(TokenType.IMPORT, AddressOf ParseModuleImpprtExpression)
         prefixParseFns.Add(TokenType.FROM, AddressOf ParseFromModuleImpprtExpression)
@@ -125,6 +127,15 @@ Public Class Parser
     Public Function ParseError_Token_ASTERISK()
         errors.Add($"错误的 ""*"" 在 第{curToken.Line}行")
         Return Nothing
+    End Function
+
+    '解析引发异常表达式
+    Public Function ParseThrowErrorExpression() As Expression
+        Dim throwErrorExp = New ThrowErrorExpression With {.Token = curToken}
+        NextToken()
+
+        throwErrorExp.ErrorObject = ParseExpression(优先级.LOWEST)
+        Return throwErrorExp
     End Function
 
     '解析模块导入表达式
@@ -242,6 +253,17 @@ Public Class Parser
 
         '解析表达式设置为类名
         stmt.Name = ParseExpression(优先级.LOWEST)
+        If PeekTokenIs(TokenType.COLON) Then
+            NextToken()
+            NextToken()
+            Dim baseClassName = ParseExpression(优先级.LOWEST)
+            If baseClassName Is Nothing Then
+                ExpectCur(-1, $"冒号（:）后面应为表达式")
+                Return Nothing
+            End If
+
+            stmt.BaseClass = baseClassName
+        End If
 
         If Not ExpectPeek(TokenType.EOL) Then
             Return Nothing
@@ -335,11 +357,56 @@ Public Class Parser
         Dim exp = New IndexExpression With {.Token = curToken, .Left = left}
         NextToken()
         exp.Index = ParseExpression(优先级.LOWEST)
+
+        If PeekTokenIs(TokenType.COLON) Then
+            Dim slice_exp = New SliceExpression With {.StartIndex = exp.Index, .Token = curToken}
+
+            Return ParseSliceExpression(left, slice_exp)
+        ElseIf CurTokenIs(TokenType.COLON) Then
+            Dim slice_exp = New SliceExpression With {.StartIndex = exp.Index, .Token = curToken}
+            If exp.Index Is Nothing Then
+                slice_exp.StartIndex = New IntegerLiteral With {.Token = curToken, .Value = 0}
+            End If
+
+            BackToken()
+            Return ParseSliceExpression(left, slice_exp)
+        End If
+
         If Not ExpectPeek(TokenType.RBRACKET) Then
             Return Nothing
         End If
 
         Dim additionalExp = ParseAdditionalExpressions(exp)
+        Return If(additionalExp, exp)
+    End Function
+
+    Public Function ParseSliceExpression(left As Expression, exp As SliceExpression) As Expression
+        Dim additionalExp As Expression
+        exp.Left = left
+
+        NextToken()
+        NextToken()
+        If CurTokenIs(TokenType.RBRACKET) Then
+            exp.StopIndex = Nothing
+
+            additionalExp = ParseAdditionalExpressions(exp)
+            Return If(additionalExp, exp)
+        End If
+
+        exp.StopIndex = ParseExpression(优先级.LOWEST)
+
+        NextToken()
+        If CurTokenIs(TokenType.COLON) Then
+            NextToken()
+            exp.IndexStep = ParseExpression(优先级.LOWEST)
+            NextToken()
+        End If
+
+        If Not ExpectCur(TokenType.RBRACKET) Then
+            Return Nothing
+        End If
+
+        additionalExp = ParseAdditionalExpressions(exp)
         Return If(additionalExp, exp)
     End Function
 
@@ -1127,9 +1194,7 @@ additionalExp:
             NextToken()
             NextToken()
 
-            ' 解析赋值表达式的右侧部分
             stmt.Value = ParseExpression(优先级.LOWEST)
-
         Else
             stmt.Value = New CallExpression With {
                 .Func = New Identifier With {.Value = "CNothing"},
@@ -1181,7 +1246,7 @@ additionalExp:
     End Function
 
     Public Function PeekTokenIs(t As TokenType， offset As Integer) As Boolean
-        Return tokens(tknPos + offset).TokenType = t
+        Return tokens(tknPos + 1 + offset).TokenType = t
     End Function
 
 
@@ -1195,6 +1260,7 @@ additionalExp:
             Return False
         End If
     End Function
+
 
     Public Function ExpectPeek(t As TokenType, custom_message As String) As Boolean
         If PeekTokenIs(t) Then
