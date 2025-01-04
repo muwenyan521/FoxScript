@@ -1,0 +1,14 @@
+Class Object
+    Dim Type = ""
+    Func GetType()
+        return Me.Type
+    EndFunc
+EndClass
+
+Class Pos : Object
+    Dim Type = "Pos"
+EndClass
+
+dim pos = New Pos()
+print(pos.GetType())
+input()

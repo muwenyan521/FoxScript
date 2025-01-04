@@ -1,4 +1,10 @@
-Class Array
+Class Object
+	Func GetType()
+		return "Object"
+	EndFunc
+EndClass
+
+Class Array : Object
 	Dim Value = []
 	Func Add(val)
 		Me.Value = Me.Value + [val]
@@ -31,9 +37,13 @@ Class Array
 	Func Sort()
 		Me.Value = Sort(Me.Value)
 	EndFunc
+
+	Func GetType()
+		return "Array"
+	EndFunc
 EndClass
 
-Class String
+Class String : Object
 	Dim Value = ""
 
 	Func Count()
@@ -49,7 +59,13 @@ Class String
  	EndFunc
 
 	Func __Add__(right)
- 		Return Me.Value + right.Value
+		If GetObjectType(right) == "String" Then
+	 		Return Me.Value + right.Value
+		EndIf
+
+		If GetObjectType(right) == "STRING_OBJ" Then
+	 		Return Me.Value + right
+		EndIf
  	EndFunc
 
 	Func New(string)
@@ -57,12 +73,27 @@ Class String
 	EndClass
 
 	Func __Multiply__(right)
-		dim str = ""
-		for i in range(right.Value)
-			str = str + Me.Value
-		next
+		If GetObjectType(right) == "Integer" Then
+	 		dim str = ""
+			for i in range(right.Value)
+				str = str + Me.Value
+			next
 
-		return str
+			return str
+		EndIf
+
+		If GetObjectType(right) == "INTEGER_OBJ" Then
+	 		dim str = ""
+			for i in range(right)
+				str = str + Me.Value
+			next
+
+			return str
+		EndIf
+	EndFunc
+
+	Func GetType()
+		return "String"
 	EndFunc
 EndClass
 
@@ -81,30 +112,58 @@ Class StringTools
  	EndFunc
 EndClass
 
-Class Integer
+Class Integer : Object
 	Dim Value = 0
 	Func New(int_num)
 		Me.Value = int_num
 	EndFunc
 
 	Func __Add__(right)
-		Return Me.Value + right.Value
+		If GetObjectType(right) == "Integer" Then
+	 		Return Me.Value + right.Value
+		EndIf
+
+		If GetObjectType(right) == "INTEGER_OBJ" Then
+	 		Return Me.Value + right
+		EndIf
 	EndFunc
 
 	Func __Subtract__(right)
-		Return Me.Value - right.Value
+		If GetObjectType(right) == "Integer" Then
+	 		Return Me.Value - right.Value
+		EndIf
+
+		If GetObjectType(right) == "INTEGER_OBJ" Then
+	 		Return Me.Value - right
+		EndIf
 	EndFunc
 
 	Func __Multiply__(right)
-		Return Me.Value * right.Value
+		If GetObjectType(right) == "Integer" Then
+	 		Return Me.Value * right.Value
+		EndIf
+
+		If GetObjectType(right) == "INTEGER_OBJ" Then
+	 		Return Me.Value * right
+		EndIf
 	EndFunc
 
 	Func __Divide__(right)
-		Return Me.Value / right.Value
+		If GetObjectType(right) == "Integer" Then
+			Return Me.Value / right.Value
+		EndIf
+
+		If GetObjectType(right) == "INTEGER_OBJ" Then
+			Return Me.Value / right
+		EndIf
+	EndFunc
+
+	Func GetType()
+		return "Integer"
 	EndFunc
 EndClass
 
-Class Double
+Class Double : Object
 	Dim Value = 0.0
 	Func New(double_num)
 		Me.Value = double_num
@@ -124,5 +183,9 @@ Class Double
 
 	Func __Divide__(right)
 		Return Me.Value / right.Value
+	EndFunc
+
+	Func GetType()
+		return "Double"
 	EndFunc
 EndClass

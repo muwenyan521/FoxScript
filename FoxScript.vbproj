@@ -30,6 +30,8 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -98,7 +100,10 @@
     <Compile Include="AST.vb" />
     <Compile Include="Errors\Error.vb" />
     <Compile Include="Errors\Number.vb" />
+    <Compile Include="Evaluator\AssignmentExpressionEvaluator.vb" />
+    <Compile Include="Evaluator\SliceExpressionEvaluator.vb" />
     <Compile Include="Evaluator\InfixExpressionEvaluator.vb" />
+    <Compile Include="Evaluator\ProgramEvaluator.vb" />
     <Compile Include="Object\Builtins.vb" />
     <Compile Include="Object\Environment.vb" />
     <Compile Include="Evaluator\Evaluator.vb" />

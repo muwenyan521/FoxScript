@@ -1,0 +1,3 @@
+import FoxGUI
+Dim f = New FoxGUI.Window()
+f.Open()

@@ -4,4 +4,5 @@
         {GetType(OverflowException), "数值溢出"},
         {GetType(FormatException), "不是一个数值"}
     }
+
 End Class

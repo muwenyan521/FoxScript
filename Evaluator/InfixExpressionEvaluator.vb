@@ -87,16 +87,16 @@ Public Class InfixExpressionEvaluator
         Dim result = CheckObject(operator_, Left, Right)
         If result IsNot Nothing Then Return result
 
-        If Left.Type <> ObjectType.CLASS_OBJ Then
-            Return ThrowError($"未知的操作: {Left.Type} {operator_} {TryCast(Right, Fox_Class).Name.Value}")
-        End If
+        'If Left.Type <> ObjectType.CLASS_OBJ Then
+        '    Return ThrowError($"未知的操作: {Left.Type} {operator_} {TryCast(Right, Fox_Class).Name.Value}")
+        'End If
 
-        If Right.Type <> ObjectType.CLASS_OBJ Then
-            Return ThrowError($"未知的操作: {TryCast(Left, Fox_Class).Name.Value} {operator_} {Right.Type}")
-        End If
+        'If Right.Type <> ObjectType.CLASS_OBJ Then
+        '    Return ThrowError($"未知的操作: {TryCast(Left, Fox_Class).Name.Value} {operator_} {Right.Type}")
+        'End If
 
-        Dim leftObject As Fox_Class = Left
-        Dim rightObject As Fox_Class = Right
+        Dim leftObject As Object = Left
+        Dim rightObject As Object = Right
 
         Dim functionObject = Nothing
         Select Case operator_
