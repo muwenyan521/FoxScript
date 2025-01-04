@@ -84,6 +84,8 @@ Public Enum TokenType
     IMPORT
     FROM
 
+    THROW_
+
     EOF
 End Enum
 
@@ -144,6 +146,7 @@ Public Class Token
         {"FROM", TokenType.FROM},
         {"AS", TokenType.AS_},
         {"LET", TokenType.LET_},
+        {"THROW", TokenType.THROW_},
         {vbNullChar, TokenType.EOF}
     }
 
@@ -201,6 +204,7 @@ Public Class Token
         {TokenType.FROM, "From"},
         {TokenType.AS_, "As"},
         {TokenType.LET_, "Let"},
+        {TokenType.THROW_, "Throw"},
         {TokenType.EOF, "文件结束"}
     }
 
