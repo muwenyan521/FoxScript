@@ -8,6 +8,8 @@ Imports FoxScript.FileSystemUtils
 Imports FoxScript.StringUtils
 Imports FoxScript.ErrorUtils
 Imports FoxScript.StatementUtils
+Imports FoxScript.ObjectUtils
+Imports System.Windows.Forms.AxHost
 
 Public Interface IEvaluatorHandler
     Function Eval(ParamArray Args() As Object) As Fox_Object
@@ -24,7 +26,9 @@ Public Class Evaluator
         Next
 
         EvaluatorHandlers = New Dictionary(Of Type, IEvaluatorHandler) From {
-            {GetType(InfixExpression), New InfixExpressionEvaluator(Me)}
+            {GetType(InfixExpression), New InfixExpressionEvaluator(Me)},
+            {GetType(SliceExpression), New SliceExpressionEvaluator(Me)},
+            {GetType(AssignmentExpression), New AssignmentExpressionEvaluator(Me)}
         }
     End Sub
 
@@ -224,7 +228,7 @@ Public Class Evaluator
                 End While
             Case GetType(AssignmentExpression)
                 Dim assignmentExp = TryCast(node, AssignmentExpression)
-                Dim value = EvalAssignmentExpression(assignmentExp.SetExp, node.Value, env)
+                Dim value = EvaluatorHandlers(assignmentExp.GetType).Eval(assignmentExp.SetExp, node.Value, env)
                 Return value
             Case GetType(NotExpression)
                 Dim notExp = TryCast(node, NotExpression)
@@ -297,38 +301,27 @@ Public Class Evaluator
                 Dim classStmt = TryCast(node, ClassStatement)
 
                 '获取类名
-                Dim className = classStmt.Name
+                Dim className As Object = classStmt.Name
                 env.SetValue(className.Value, Nothing, False)
 
                 '获取类代码块
                 Dim body = classStmt.Body
 
-                Dim clsObj = New Fox_Class With {.Env = New Environment With {.outer = env}, .Body = body, .Name = className}
+                Dim clsObj = New Fox_Class With {
+                    .Env = New ClassEnvironment With {.outer = env},
+                    .Body = body, .Name = className,
+                    .CreateFunc = FindFunctionLiteral("New", body.Statements),
+                    .BaseClass = Eval(classStmt.BaseClass, env)
+                }
 
-                Dim Stmts = FindAllStatement(body.Statements, GetType(ExpressionStatement))
-                Dim expStmts As New List(Of ExpressionStatement)
-
-                For Each stmt As ExpressionStatement In Stmts
-                    expStmts.Add(stmt)
-                Next
-
-
-                Dim funcLiterals = FindAllExpression(expStmts, GetType(FunctionLiteral))
-                For Each stmt As FunctionLiteral In funcLiterals
-                    Dim funcLiteral = TryCast(stmt, FunctionLiteral)
-                    If funcLiteral.Name.Value.Replace(" ", "") = "New" Then
-                        clsObj.CreateFunc = funcLiteral
-                    End If
-                Next
-
+                ExtendClassEnv(clsObj)
                 Eval(clsObj.Body, clsObj.Env)
-                clsObj.Env.SetValue("Me", clsObj, False)
 
+                clsObj.Env.SetValue("Me", clsObj, False)
+                clsObj.Env.SetValue("MyBase", clsObj.BaseClass, False)
                 env.SetValue(className.Value, clsObj, False)
 
                 Dim classObject = env.GetValue(className.Value).Item1
-
-                '返回
                 Return classObject
 
             Case GetType(ObjectMemberExpression)
@@ -346,12 +339,14 @@ Public Class Evaluator
                 Dim newObj = Nothing
                 If r.Type = ObjectType.CLASS_OBJ Then
                     Dim classObj As Fox_Class = r
-                    newObj = New Fox_Class With {.Body = classObj.Body, .Env = New Environment, .Name = classObj.Name, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments}
+                    newObj = New Fox_Class With {.Body = classObj.Body, .Env = New ClassEnvironment, .Name = classObj.Name, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments, .BaseClass = classObj.BaseClass}
 
+                    ExtendClassEnv(newObj)
                     Dim result = Eval(newObj.Body, newObj.Env)
                     If IsError(result) Then Return result
 
                     newObj.Env.SetValue("Me", newObj, False)
+                    newObj.Env.SetValue("MyBase", newObj.BaseClass, False)
 
                     If newObj.CreateFunc IsNot Nothing Then
                         Eval(New CallExpression With
@@ -364,7 +359,7 @@ Public Class Evaluator
                     End If
                 ElseIf r.Type = ObjectType.VB_CLASS_OBJ Then
                     Dim classObj As VBClass = r
-                    newObj = New VBClass With {.Env = New Environment, .Name = classObj.Name, .Members = classObj.Members, .Instance = classObj.Instance, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments}
+                    newObj = New VBClass With {.Env = New Environment, .Name = classObj.Name, .Members = classObj.Members, .Instance = classObj.Instance, .CreateFunc = classObj.CreateFunc, .CreateArgs = objCreateExp.Arguments, .OnPropertyChangeFunction = classObj.OnPropertyChangeFunction}
 
                     For Each item As Object In newObj.Members
                         newObj.Env.SetValue(item.Name.Value, item, False)
@@ -382,7 +377,7 @@ Public Class Evaluator
                 Dim fileImportExp = TryCast(node, FileImportExpression)
                 Dim className = DirectCast(fileImportExp.AliasName, Identifier).Value
 
-                Dim classObj = New Fox_Class With {.Body = New BlockStatement, .Env = New Environment, .Name = New Identifier With {.Value = className}}
+                Dim classObj = New Fox_Class With {.Body = New BlockStatement, .Env = New ClassEnvironment, .Name = New Identifier With {.Value = className}}
                 Dim filePath As Object = Eval(fileImportExp.FilePath, env)
                 If IsError(filePath) Then Return filePath
 
@@ -393,7 +388,7 @@ Public Class Evaluator
                 Return Nothing
             Case GetType(FromModuleImportExpression)
                 Dim fromModuleImportExp = TryCast(node, FromModuleImportExpression)
-                Dim moduleName As String =  Trim(DirectCast(fromModuleImportExp.ModuleName, Identifier).Value)
+                Dim moduleName As String = Trim(DirectCast(fromModuleImportExp.ModuleName, Identifier).Value)
                 Dim importItemName As String = Trim(DirectCast(fromModuleImportExp.ImportItem, Identifier).Value)
                 Runner.Eval($"import {moduleName}", env)
 
@@ -420,7 +415,7 @@ Public Class Evaluator
                 Dim moduleName = Trim(DirectCast(moduleImportExp.ModuleName, Identifier).Value)
 
                 Dim className As String = Trim(DirectCast(If(moduleImportExp.AliasName, moduleImportExp.ModuleName), Identifier).Value)
-                Dim classObj = New Fox_Class With {.Body = New BlockStatement, .Env = New Environment, .Name = New Identifier With {.Value = className}}
+                Dim classObj = New Fox_Class With {.Body = New BlockStatement, .Env = New ClassEnvironment, .Name = New Identifier With {.Value = className}}
 
                 Dim getModulePath = env.GetValue("ModulePath")
                 If Not getModulePath.Item2 Then Return ThrowError($"找不到库: {moduleName}")
@@ -462,6 +457,21 @@ Public Class Evaluator
 
                 env.SetValue(className, vbClassObj, False)
                 Return Nothing
+            Case GetType(SliceExpression)
+                Dim sliceExp = TryCast(node, SliceExpression)
+                Dim arrayObj = Eval(sliceExp.Left, env)
+                If IsError(arrayObj) Then Return arrayObj
+
+                Dim startIndex = Eval(sliceExp.StartIndex, env)
+                If IsError(startIndex) Then Return startIndex
+
+                Dim stopIndex = Eval(sliceExp.StopIndex, env)
+                If IsError(stopIndex) Then Return stopIndex
+
+                Dim stepIndex = Eval(sliceExp.IndexStep, env)
+                If IsError(stepIndex) Then Return stepIndex
+
+                Return EvaluatorHandlers(GetType(SliceExpression)).Eval(arrayObj, startIndex, stopIndex, stepIndex)
         End Select
 
         Return Nothing
@@ -469,59 +479,52 @@ Public Class Evaluator
 
 
 
+    Public Function ExtendClassEnv(ByRef clsObj As Fox_Class) As Fox_Object
+        'Dim funcNames = FindAllFoxObject(clsObj.Env.GetObjects, ObjectType.FUNCTION_OBJ).Select(Function(item As Fox_Function) item.Name.Value).ToList
+        'Dim classNames = FindAllFoxObject(clsObj.Env.GetObjects, ObjectType.CLASS_OBJ).Select(Function(item As Fox_Class) item.Name.Value).ToList
 
+        'clsObj.Env.Funcs = GetObjectDictionary(funcNames, clsObj.Env.GetObjects, ObjectType.FUNCTION_OBJ)
+        'clsObj.Env.Classes = GetObjectDictionary(classNames, clsObj.Env.GetObjects, ObjectType.CLASS_OBJ)
 
+        'For Each name As String In clsObj.Env.store.Keys
+        '    If Not (clsObj.Env.Funcs.ContainsKey(name) OrElse clsObj.Env.Classes.ContainsKey(name)) Then
+        '        clsObj.Env.Vars.Add(name, clsObj.Env.store(name))
+        '    End If
+        'Next
 
+        If clsObj.BaseClass IsNot Nothing Then
+            If IsError(clsObj.BaseClass) Then Return clsObj.BaseClass
 
-    Public Function EvalAssignmentExpression(SetExp As Expression, valueExp As Expression, ByRef env As Environment)
-        Select Case SetExp.GetType
-            Case GetType(Identifier)
-                '转换为表达式为Identifier
-                Dim ident = TryCast(SetExp, Identifier)
+            Dim baseClass As Fox_Class = clsObj.BaseClass
+            Dim baseEnv As Environment = baseClass.Env
 
-                '尝试寻找标识符
-                Dim get_Ident = env.GetValue(ident.ToString)
+            For Each keyPair As KeyValuePair(Of String, Data) In baseEnv.store
+                Dim name = keyPair.Key
+                Dim data = keyPair.Value
+                If name = "Me" Then Continue For
+                If name = "New" Then Continue For
 
-                '标识符不存在
-                If Not get_Ident.Item2 Then
-                    '报错
-                    Return ThrowError($"标识符 {ident.Value} 不存在! ")
+                clsObj.Env.SetValue(name, data.FoxObject, data.isReadonly)
+            Next
+
+            Dim EnvStore As New Dictionary(Of String, Data)(clsObj.Env.store)
+            For Each keyPair As KeyValuePair(Of String, Data) In EnvStore
+                Dim name = keyPair.Key
+                Dim data = keyPair.Value
+                If name = "Me" Then Continue For
+
+                If TypeOf data.FoxObject Is Fox_Function Then
+                    Dim func As Fox_Function = data.FoxObject
+                    func.Env = clsObj.Env
+
+                    clsObj.Env.SetValue(name, func, data.isReadonly)
                 End If
 
-                '将环境中标识符的值修改
-                Dim result = env.SetValue(ident.Value, Eval(valueExp, env), False)
-                If TypeOf result Is Fox_Error Then Return result
-            Case GetType(ObjectMemberExpression)
-                Dim ObjectMemberExp = TryCast(SetExp, ObjectMemberExpression)
-                Dim ClassObject As Object = Eval(ObjectMemberExp.Left, env)
-                If IsError(ClassObject) Then Return ClassObject
-
-                If ClassObject.Type = ObjectType.CLASS_OBJ Then
-                    Dim name = ObjectMemberExp.Right.ToString.Replace(" ", "")
-                    Dim value = Eval(valueExp, env)
-                    ClassObject.Env.SetValue(name, value, False)
-                    ClassObject.Env.SetValue("Me", ClassObject, False)
-                ElseIf ClassObject.Type = ObjectType.VB_CLASS_OBJ Then
-                    Dim name = ObjectMemberExp.Right.ToString.Replace(" ", "")
-                    Dim value = Eval(valueExp, env)
-
-                    Dim vbClassObj As VBClass = ClassObject
-                    vbClassObj.Env.SetValue(name, value, False)
-
-                    Dim memberIndex = FindVBMemberIndex(vbClassObj.Members, name)
-                    Dim memberObj = vbClassObj.Members(memberIndex)
-
-                    If memberObj.Type = ObjectType.VB_MEMBER_OBJ Then
-                        vbClassObj.Instance.GetType().GetField(name).SetValue(vbClassObj.Instance, value)
-                    End If
-                End If
-        End Select
+            Next
+        End If
 
         Return Nothing
     End Function
-
-
-
 
     Public Function EvalObjectMemberExpression(leftObject As Fox_Object, rightExp As Expression, ByRef env As Environment)
         Select Case leftObject.Type
@@ -738,6 +741,7 @@ Public Class Evaluator
         Dim env = New Environment With {.outer = func.Env}
 
         Dim class_functioncall = env.outer.GetValue("Me")
+        Dim base_class_functioncall = env.outer.GetValue("MyBase")
 
         If func.Parameters Is Nothing Then Return env
 
@@ -753,7 +757,7 @@ Public Class Evaluator
             env.SetValue(func.Parameters(parmaIndex).Value, args(parmaIndex), False)
         Next
 
-        If class_functioncall.Item2 Then
+        If class_functioncall.Item2 AndAlso base_class_functioncall.Item2 Then
         End If
 
         Return env
@@ -972,9 +976,6 @@ Public Class Evaluator
                 Return Fox_False
         End Select
     End Function
-
-
-
     Public Function EvalProgram(stmts As List(Of Statement), env As Environment) As Fox_Object
         Dim result As Fox_Object = Nothing
 
@@ -996,6 +997,5 @@ Public Class Evaluator
         Next
         Return result
     End Function
-
 End Class
 
