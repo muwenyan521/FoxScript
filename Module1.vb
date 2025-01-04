@@ -81,7 +81,7 @@ Public Class Runner
             If analyzer.CheckErrors Then Return
 
             Dim result As Fox_Object = evaluator.Eval(program, env)
-            If result IsNot Nothing Then
+            If TypeOf result Is Fox_Error Then
                 Console.WriteLine(result.Inspect)
             End If
         End If
@@ -179,6 +179,9 @@ End Class
 Module Module1
 
     Sub Main()
+        Console.OutputEncoding = Encoding.UTF8
+        Console.InputEncoding = Encoding.UTF8
+
         '获取启动参数
         Dim cmd = My.Application.CommandLineArgs
 
