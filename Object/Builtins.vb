@@ -16,6 +16,29 @@ Public Class Builtins
     Public Shared AppPath = AppDomain.CurrentDomain.BaseDirectory
     Public Shared builtinFuncs As New Dictionary(Of String, Fox_Builtin) From
     {
+        {"GetObjectType", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
+                                                                       Dim 所需实参数 = 1
+
+                                                                       If args.Count > 所需实参数 Then
+                                                                           Return ThrowError($"实参过多")
+                                                                       End If
+
+                                                                       If args.Count < 所需实参数 Then
+                                                                           Return ThrowError($"提供的实参过少 实参{args.Count}个 形参{所需实参数}个")
+                                                                       End If
+
+                                                                       If args.Count = 所需实参数 Then
+                                                                           Dim Obj As Fox_Object = args(0)
+                                                                           If Obj.Type = ObjectType.CLASS_OBJ Then
+                                                                               Return New Fox_String With {.Value = Trim(DirectCast(Obj, Fox_Class).Name.Value)}
+                                                                           End If
+
+                                                                           Return New Fox_String With {.Value = Obj.Type.ToString}
+                                                                       End If
+
+
+                                                                       Return Nothing
+                                                                   End Function}},
         {"input", New Fox_Builtin With {.BuiltinFunction = Function(args As IEnumerable(Of Object))
                                                                Dim 所需实参数 = 1
 
@@ -374,7 +397,7 @@ Public Class Builtins
                                                                        Case ObjectType.INTEGER_OBJ
                                                                            Dim arr = New Fox_Array With {.Elements = New List(Of Fox_Object)}
                                                                            Try
-                                                                               For i = 0 To args(0).Value
+                                                                               For i = 0 To args(0).Value - 1
                                                                                    arr.Elements.Add(New Fox_Integer With {.Value = i})
                                                                                Next
                                                                            Catch ex As OutOfMemoryException
