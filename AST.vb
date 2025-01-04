@@ -350,6 +350,41 @@ Public Class IndexExpression '索引表达式 比如 [1]
 End Class
 
 
+Public Class SliceExpression '切片表达式 比如 [0:2]
+    Implements Expression
+    Public Token As Token ' "["词法单元
+    Public Left As Expression
+    Public StartIndex As Expression
+    Public StopIndex As Expression
+    Public IndexStep As Expression = New IntegerLiteral(1)
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Expression.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Expression.ToString
+        Dim sb As New StringBuilder
+        sb.Append("(")
+        sb.Append(Left.ToString)
+        sb.Append("[")
+        sb.Append(StartIndex.ToString)
+        sb.Append(":")
+        sb.Append(StopIndex.ToString)
+
+        If TypeOf IndexStep Is IntegerLiteral AndAlso DirectCast(IndexStep, IntegerLiteral).Value <> 1 Then
+            sb.Append(":")
+            sb.Append(IndexStep.ToString)
+        End If
+        sb.Append("])")
+
+        Return sb.ToString()
+    End Function
+End Class
+
+
 Public Class PrefixExpression '前缀表达式 比如 !a ++a 
     Implements Expression
     Public Token As Token ' 前缀词法单元，如! 
@@ -452,6 +487,34 @@ Public Class ObjectMemberExpression '对象成员表达式 比如 a.value
     End Function
 End Class
 
+Public Class ThrowErrorExpression '引发异常表达式 比如 Throw New Error("错误")
+    Implements Expression
+    Public Token As Token ' THROW_词法单元类型
+    Public ErrorObject As Expression
+
+    Public Sub ExpressionNode() Implements Expression.ExpressionNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Expression.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Expression.ToString
+        '返回的大概字符串:
+        '([表达式][.][表达式])
+
+        Dim sb As New StringBuilder
+
+        sb.Append("(")
+        sb.Append("Throw")
+        sb.Append(" ")
+        sb.Append(ErrorObject.ToString())
+        sb.Append(")")
+
+        Return sb.ToString()
+    End Function
+End Class
 
 Public Class ForStatement 'For 语句
     Implements Statement
@@ -613,11 +676,12 @@ Public Class WhileStatement 'While 表达式
     End Function
 End Class
 
-Public Class ClassStatement '类语句
+Public Class ClassStatement
     Implements Statement
     Public Token As Token   'CLASS_ 词法单元 
     Public Body As BlockStatement
-    Public Name As Identifier
+    Public Name As Expression
+    Public BaseClass As Expression
 
     Public Sub statementNode() Implements Statement.StatementNode
         Throw New NotImplementedException()
@@ -633,6 +697,13 @@ Public Class ClassStatement '类语句
         sb.Append(" ")
         sb.Append(Name.ToString.Replace(vbCr, ""))
         sb.Append(" ")
+
+        If BaseClass IsNot Nothing Then
+            sb.Append(":")
+            sb.Append(" ")
+            sb.Append(BaseClass.ToString.Replace(vbCr, ""))
+        End If
+
         sb.Append(Body.ToString.Replace(vbCr, ""))
         sb.Append(" ")
         sb.Append("endclass")
