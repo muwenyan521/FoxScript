@@ -1,4 +1,7 @@
-﻿Public Class Lexer
+﻿Imports System.Globalization
+Imports Emoji.Wpf
+
+Public Class Lexer
     Private ReadOnly _code As String ' 要分析的文本
     Private _pos As Integer = 0 ' 当前分析的位置
     Private _nextPos As Integer = 0 ' 下一个分析的位置
@@ -50,8 +53,25 @@
             '将当前读取的字符修改为下一个字符
             _readingChar = PySubString(_code, _pos, _nextPos)
 
-            If _readingChar = vbCrLf Then
+            If _readingChar = vbCrLf OrElse _readingChar = vbCr OrElse _readingChar = vbLf Then
                 _line += 1 ' 当读取到换行符时，行号加1
+            End If
+        End If
+
+
+    End Sub
+
+    Public Sub BackChar()
+        If _pos <= 0 OrElse _nextPos < 0 Then
+            _readingChar = vbNullChar
+        Else
+            _nextPos = _pos
+
+            _pos -= 1
+            _readingChar = PySubString(_code, _pos, _nextPos)
+
+            If _readingChar = vbCrLf Then
+                _line -= 1 ' 当读取到换行符时，行号加1
             End If
         End If
 
@@ -114,7 +134,7 @@
                     tkn = New Token(TokenType.LT, _readingChar, _line)
                 End If
 
-            Case vbCrLf, vbLf, vbCr
+            Case vbCrLf
                 tkn = New Token(TokenType.EOL, vbCrLf, _line)
             Case ">"c
                 tkn = New Token(TokenType.GT, _readingChar, _line)
@@ -138,6 +158,12 @@
                 tkn = New Token(TokenType.DOT, _readingChar, _line)
             Case """"
                 tkn.TokenType = TokenType.STRING_
+
+                If _code.Count - 1 >= _pos + 2 AndAlso PeekChar() = """" AndAlso _code(_nextPos + 1) = """" Then
+                    tkn.Value = ReadMultiLineString()
+                    Return tkn
+                End If
+
                 tkn.Value = ReadString().Replace(vbCr, "")
             Case "'"
                 tkn.TokenType = TokenType.SingleQuote
@@ -151,8 +177,8 @@
                     Return tkn
                 End If
 
-                '如果当前字符为字母
-                If Letters.Contains(_readingChar) OrElse _readingChar = "_" OrElse IsChineseCharacter(_readingChar) Then
+                '如果当前字符合法
+                If IsValidChar(_readingChar) Then
                     '读取 . Replace(vbCr,"")是为了把换行符去掉
                     Dim ident = ReadIdentifier().Replace(vbCr, "")
                     tkn = New Token(GetIdentTokenType(ident), ident, _line)
@@ -164,6 +190,38 @@
         ReadChar()
         Return tkn
     End Function
+
+    Public Function ReadMultiLineString() As String
+        Dim result As New System.Text.StringBuilder()
+        Dim p = _pos
+
+        ' 跳过开始的三引号
+        ReadChar()
+        ReadChar()
+        ReadChar()
+
+        ' 读取字符串内容，直到遇到结束的三引号
+        While True
+            If _readingChar = """" AndAlso PeekChar() = """" AndAlso _code(_nextPos + 1) = """" Then
+                ' 跳过结束的三引号
+                ReadChar()
+                ReadChar()
+                ReadChar()
+                Return result.ToString()
+            Else
+                result.Append(_readingChar)
+                ReadChar()
+                If _readingChar = vbNullChar Then
+                    ' 如果遇到字符串结束，则返回空字符串
+                    Return ""
+                End If
+            End If
+        End While
+
+        ' 返回读取的多行字符串，不包括开始和结束的三引号
+        Return result.ToString()
+    End Function
+
 
     Public Function ReadNote() As String
         Dim p = _pos
@@ -195,6 +253,7 @@
 
     Public Sub SkipWhiteSpace()
         ' OrElse _readingChar = vbCr OrElse _readingChar = vbLf OrElse _readingChar = vbCrLf
+
         While _readingChar = " "c
             ReadChar()
         End While
@@ -243,7 +302,42 @@
            (code >= &H2CEB0 AndAlso code <= &H2EBEF) OrElse
            (code >= &H30000 AndAlso code <= &H3134F)
     End Function
+    Function IsLanguageCharacter(ByVal ch As Char) As Boolean
+        Dim unicodeCategory As UnicodeCategory = CharUnicodeInfo.GetUnicodeCategory(ch)
+        Select Case unicodeCategory
+            Case _
+                UnicodeCategory.UppercaseLetter, UnicodeCategory.LowercaseLetter,
+                UnicodeCategory.TitlecaseLetter, UnicodeCategory.ModifierLetter,
+                UnicodeCategory.OtherLetter, UnicodeCategory.NonSpacingMark,
+                UnicodeCategory.SpacingCombiningMark, UnicodeCategory.EnclosingMark
+                Return True
+            Case Else
+                Return False
+        End Select
+    End Function
 
+    Function IsEmojiCharacter(ByVal ch As Char) As Boolean
+        ' This is a simple check for emoji ranges. It might not cover all emoji characters.
+        Dim codePoint As Integer = AscW(ch)
+        Return (codePoint >= &HD800 AndAlso codePoint <= &HDBFF) OrElse
+               (codePoint >= &HDC00 AndAlso codePoint <= &HDFFF) OrElse
+               (codePoint >= &H1F600 AndAlso codePoint <= &H1F64F) OrElse
+               (codePoint >= &H1F300 AndAlso codePoint <= &H1F5FF) OrElse
+               (codePoint >= &H1F680 AndAlso codePoint <= &H1F6FF) OrElse
+               (codePoint >= &H2600 AndAlso codePoint <= &H26FF) OrElse
+               (codePoint >= &H2700 AndAlso codePoint <= &H27BF) OrElse
+               (codePoint >= &H1F900 AndAlso codePoint <= &H1F9FF) OrElse
+               (codePoint >= &H1FA00 AndAlso codePoint <= &H1FA6F)
+    End Function
+
+    Public Function IsValidChar(ch)
+        Return _
+            IsChineseCharacter(_readingChar) _
+            OrElse _readingChar = "_" _
+            OrElse IsLanguageCharacter(_readingChar) _
+            OrElse Char.IsDigit(_readingChar) _
+            OrElse IsEmojiCharacter(ch)
+    End Function
 
     Public Function ReadIdentifier() As String
         '记录当前索引
@@ -251,7 +345,8 @@
 
         '坑爹vb.net (艹皿艹 )
         '重复读取直到字符不是字母 或者 下划线 
-        While Char.IsLetter(_readingChar) OrElse _readingChar = "_" OrElse IsChineseCharacter(_readingChar) OrElse Char.IsDigit(_readingChar)
+        While IsValidChar(_readingChar)
+
             ReadChar()
         End While
 
