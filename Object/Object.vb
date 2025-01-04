@@ -1,7 +1,14 @@
-﻿'各种类型
-Imports System.Numerics
+﻿Imports System.Numerics
 Imports System.Text
+Imports FoxScript.Evaluator
+Imports FoxScript.Utils
+Imports FoxScript.BooleanUtils
+Imports FoxScript.FileSystemUtils
+Imports FoxScript.StringUtils
+Imports FoxScript.ErrorUtils
+Imports FoxScript.StatementUtils
 
+'各种类型
 Public Enum ObjectType
     INTEGER_OBJ ' INTEGER
     DOUBLE_OBJ ' DOUBLE
@@ -10,6 +17,7 @@ Public Enum ObjectType
     FUNCTION_OBJ ' "FUNCTION"
     STRING_OBJ 'STRING
     ERROR_OBJ 'ERROR
+    CUSTOM_ERROR_OBJ 'ERROR
     BUILTIN_OBJ 'BUILTIN
     ARRAY_OBJ 'Array
     DICTIONARY_KEY_OBJ '字典Key
@@ -377,7 +385,8 @@ Public Class Fox_Class
     '继承Object
     Implements Fox_Object
     Public Body As BlockStatement
-    Public Env As Environment
+    Public Env As ClassEnvironment
+    Public BaseClass As Fox_Class
     Public Name As Identifier
     Public CreateFunc As FunctionLiteral
     Public CreateArgs As List(Of Expression)
@@ -413,6 +422,7 @@ Public Class VBClass
     Public CreateFunc As VBFunction
     Public CreateArgs As List(Of Expression)
     Public Members As List(Of VB_Object)
+    Public OnPropertyChangeFunction As Func(Of String, Object, Object)
     Public Env As Environment
     Public Instance
 
@@ -475,5 +485,28 @@ Public Class VBMember
 
     Public Sub New()
 
+    End Sub
+End Class
+
+Public Class Fox_CustomError
+    Inherits Fox_Error
+    Implements Fox_Object
+    Public Shadows Message As String
+    Public ErrorName As String
+    Public ClassObject As Fox_Class
+    Public Overloads Function Type() As ObjectType Implements Fox_Object.Type
+        Return ObjectType.CUSTOM_ERROR_OBJ
+    End Function
+
+    '返回一个错误信息
+    Public Overloads Function Inspect() As String Implements Fox_Object.Inspect
+        Return $"{ErrorName}: {Message}"
+    End Function
+
+    Public Sub New(ClassObj As Fox_Class)
+        ClassObject = ClassObj
+    End Sub
+
+    Public Sub New()
     End Sub
 End Class
