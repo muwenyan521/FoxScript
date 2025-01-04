@@ -169,3 +169,27 @@ Public Class FileSystemUtils
     End Function
 End Class
 
+
+Public Class ObjectUtils
+    Public Shared Function FindAllFoxObject(objs As List(Of Fox_Object), objType As ObjectType) As List(Of Fox_Object)
+        Dim obj_list As New List(Of Fox_Object)
+        For Each obj As Fox_Object In objs
+            If obj.Type = objType Then
+                obj_list.Add(obj)
+            End If
+        Next
+
+        Return obj_list
+    End Function
+
+    Public Shared Function GetObjectDictionary(names As List(Of String), objs As List(Of Fox_Object), objType As ObjectType) As Dictionary(Of String, Data)
+        Dim obj_list = FindAllFoxObject(objs, objType)
+        Dim data_list = obj_list.Select(Function(item) New Data(item, False))
+
+        Dim dict As New Dictionary(Of String, Data)
+        For dataIndex = 0 To data_list.Count - 1
+            dict.Add(names(dataIndex), data_list(dataIndex))
+        Next
+        Return dict
+    End Function
+End Class
