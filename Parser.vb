@@ -4,23 +4,28 @@ Imports System.Numerics
 Public Enum 优先级
     无意义
     LOWEST
-    OBJ_INHERITS
+    ASSIGNMENT
+    AND_OR      '// Or | And
     EQUALS      '//== 
-    LESSGREATER '// > Or <
+    LESSGREATER '// > | <
     SUM         '// + 
     PRODUCT    ' // * 
-    PREFIX     ' // -X Or !X 
+    PREFIX     ' // -X | !X 
     CALL_       ' // myFunction(X)
     INDEX '// array[index] 
-    OBJ_MEMBER ' person.Name
+    OBJ_MEMBER ' person.Name    
 End Enum
 
 Public Class Parser
     Public 优先级字典 As New Dictionary(Of TokenType, 优先级) From
     {
         {TokenType.EQ, 优先级.EQUALS},
+        {TokenType.ASSIGN, 优先级.ASSIGNMENT},
+        {TokenType.DOT, 优先级.OBJ_MEMBER},
         {TokenType.NOT_EQ, 优先级.EQUALS},
         {TokenType.LT, 优先级.LESSGREATER},
+        {TokenType.BOOL_AND, 优先级.AND_OR},
+        {TokenType.BOOL_OR, 优先级.AND_OR},
         {TokenType.GT, 优先级.LESSGREATER},
         {TokenType.PLUS, 优先级.SUM},
         {TokenType.MINUS, 优先级.SUM},
@@ -39,7 +44,7 @@ Public Class Parser
     Private ReadOnly errors As New List(Of String)
 
     Public Delegate Function PrefixParseFunction() As Expression
-    Public Delegate Function InfixParseFunction(ByVal left As Expression) As Expression
+    Public Delegate Function InfixParseFunction(left As Expression) As Expression
 
     ' 声明委托字段
     Private ReadOnly prefixParseFns As New Dictionary(Of TokenType, PrefixParseFunction)
@@ -50,6 +55,7 @@ Public Class Parser
         {GetType(ForStatement), 0},
         {GetType(WhileStatement), 0},
         {GetType(ClassStatement), 0},
+        {GetType(TryCatchStatement), 0},
         {GetType(FunctionLiteral), 0}
     }
 
@@ -76,7 +82,6 @@ Public Class Parser
         tokens = l.Lexer
 
         '注册前缀符
-
         prefixParseFns.Add(TokenType.THROW_, AddressOf ParseThrowErrorExpression)
         prefixParseFns.Add(TokenType.SingleQuote, AddressOf ParseComment)
         prefixParseFns.Add(TokenType.IMPORT, AddressOf ParseModuleImpprtExpression)
@@ -109,6 +114,10 @@ Public Class Parser
         infixParseFns.Add(TokenType.LPAREN, AddressOf ParseCallExpression)
         infixParseFns.Add(TokenType.SingleQuote, AddressOf ParseComment)
         infixParseFns.Add(TokenType.LBRACKET, AddressOf ParseIndexExpression)
+        infixParseFns.Add(TokenType.BOOL_AND, AddressOf ParseLogicalExpression)
+        infixParseFns.Add(TokenType.BOOL_OR, AddressOf ParseLogicalExpression)
+        infixParseFns.Add(TokenType.DOT, AddressOf ParseObjectMemberExpression)
+        infixParseFns.Add(TokenType.ASSIGN, AddressOf ParseAssignmentExpression)
     End Sub
 
     Public Function ParseError_Token_RBRACKET()
@@ -130,6 +139,40 @@ Public Class Parser
     End Function
 
     '解析引发异常表达式
+    Public Function ParseTryCatchStatement() As Statement
+        Dim tryCatchStmt = New TryCatchStatement With {.Token = curToken}
+        NextToken()
+
+        If Not ExpectCur(TokenType.EOL) Then
+            Return Nothing
+        End If
+
+        NextToken()
+        tryCatchStmt.TryBlock = ParseBlockStatement(tryCatchStmt.GetType)
+
+        NextToken()
+        tryCatchStmt.CatchVar = ParseExpression(优先级.LOWEST)
+
+        NextToken()
+        NextToken()
+        tryCatchStmt.CatchClass = ParseExpression(优先级.LOWEST)
+
+        NextToken()
+        If Not ExpectCur(TokenType.EOL) Then
+            Return Nothing
+        End If
+
+        NextToken()
+        tryCatchStmt.CatchBlock = ParseBlockStatement(tryCatchStmt.GetType)
+
+        If Not ExpectCur(TokenType.ENDTRY) Then
+            Return Nothing
+        End If
+
+        Return tryCatchStmt
+    End Function
+
+    '解析引发异常表达式
     Public Function ParseThrowErrorExpression() As Expression
         Dim throwErrorExp = New ThrowErrorExpression With {.Token = curToken}
         NextToken()
@@ -148,7 +191,11 @@ Public Class Parser
             Return Nothing
         End If
 
-        moduleImportExp.ModuleName = ParseExpression(优先级.LOWEST)
+        If CurTokenIs(TokenType.DOT) Then
+            moduleImportExp.ModuleName = New Identifier(".")
+        Else
+            moduleImportExp.ModuleName = ParseExpression(优先级.LOWEST)
+        End If
 
         NextToken()
         If Not CurTokenIs(TokenType.AS_) Then
@@ -176,7 +223,12 @@ Public Class Parser
             Return Nothing
         End If
 
-        fromModuleImportExp.ModuleName = ParseExpression(优先级.LOWEST)
+
+        If CurTokenIs(TokenType.DOT) Then
+            fromModuleImportExp.ModuleName = New Identifier(".")
+        Else
+            fromModuleImportExp.ModuleName = ParseExpression(优先级.LOWEST)
+        End If
 
         NextToken()
         If Not ExpectCur(TokenType.IMPORT) Then
@@ -348,9 +400,7 @@ Public Class Parser
         End While
 
         NextToken()
-
-        Dim additionalExp = ParseAdditionalExpressions(dict)
-        Return If(additionalExp, dict)
+        Return dict
     End Function
 
     Public Function ParseIndexExpression(left As Expression) As Expression
@@ -376,21 +426,17 @@ Public Class Parser
             Return Nothing
         End If
 
-        Dim additionalExp = ParseAdditionalExpressions(exp)
-        Return If(additionalExp, exp)
+        Return exp
     End Function
 
     Public Function ParseSliceExpression(left As Expression, exp As SliceExpression) As Expression
-        Dim additionalExp As Expression
         exp.Left = left
 
         NextToken()
         NextToken()
         If CurTokenIs(TokenType.RBRACKET) Then
             exp.StopIndex = Nothing
-
-            additionalExp = ParseAdditionalExpressions(exp)
-            Return If(additionalExp, exp)
+            Return exp
         End If
 
         exp.StopIndex = ParseExpression(优先级.LOWEST)
@@ -406,8 +452,7 @@ Public Class Parser
             Return Nothing
         End If
 
-        additionalExp = ParseAdditionalExpressions(exp)
-        Return If(additionalExp, exp)
+        Return exp
     End Function
 
     Public Function ParseArrayLiteral() As Expression
@@ -415,9 +460,7 @@ Public Class Parser
             .Token = curToken,
             .Elements = ParseExpressionList(TokenType.RBRACKET)
         }
-
-        Dim additionalExp = ParseAdditionalExpressions(array)
-        Return If(additionalExp, array)
+        Return array
     End Function
 
 
@@ -457,19 +500,15 @@ Public Class Parser
 
 
     Public Function ParseStringLiteral() As Expression
-        Dim StrExp = New StringLiteral With {.Token = curToken, .Value = curToken.Value}
-
-        Dim additionalExp = ParseAdditionalExpressions(StrExp)
-        Return If(additionalExp, StrExp)
+        Dim exp = New StringLiteral With {.Token = curToken, .Value = curToken.Value}
+        Return exp
     End Function
 
     '解析函数调用表达式
     Public Function ParseCallExpression(func As Expression) As Expression
         '创建一个函数调用表达式
         Dim exp = New CallExpression With {.Token = curToken, .Func = func, .Arguments = ParseExpressionList(TokenType.RPAREN)}
-
-        Dim additionalExp = ParseAdditionalExpressions(exp)
-        Return If(additionalExp, exp)
+        Return exp
     End Function
 
     '没啥意义
@@ -563,10 +602,7 @@ Public Class Parser
             End If
 
             CountDictionary(Expression.GetType) += 1
-            Dim additionalExp = ParseAdditionalExpressions(Expression)
-            Return If(additionalExp, Expression)
-
-
+            Return Expression
         Catch ex As Fail
             CountDictionary(Expression.GetType) += 1
             Return Nothing
@@ -583,9 +619,7 @@ Public Class Parser
 
         '解析表达式并设置为右侧表达式
         Expression.Right = ParseExpression(优先级.LOWEST)
-
-        Dim additionalExp = ParseAdditionalExpressions(Expression)
-        Return If(additionalExp, Expression)
+        Return Expression
     End Function
 
 
@@ -626,7 +660,6 @@ Public Class Parser
 
         '解析代码块并设置为函数的代码块
         lit.Body = ParseBlockStatement(lit.GetType)
-
         Return lit
     End Function
 
@@ -719,7 +752,7 @@ Public Class Parser
             NextToken()
         Next
 
-        While Not CurTokenIs(TokenType.NEXT_) AndAlso Not CurTokenIs(TokenType.ENDWHILE) AndAlso Not CurTokenIs(TokenType.ENDFUNC) AndAlso Not CurTokenIs(TokenType.ENDIF_) AndAlso Not CurTokenIs(TokenType.ELSEIF_) AndAlso Not CurTokenIs(TokenType.ELSE_) AndAlso Not CurTokenIs(TokenType.ENDCLASS) AndAlso Not CurTokenIs(TokenType.EOF)
+        While Not CurTokenIs(TokenType.CATCH_) AndAlso Not CurTokenIs(TokenType.ENDTRY) AndAlso Not CurTokenIs(TokenType.NEXT_) AndAlso Not CurTokenIs(TokenType.ENDWHILE) AndAlso Not CurTokenIs(TokenType.ENDFUNC) AndAlso Not CurTokenIs(TokenType.ENDIF_) AndAlso Not CurTokenIs(TokenType.ELSEIF_) AndAlso Not CurTokenIs(TokenType.ELSE_) AndAlso Not CurTokenIs(TokenType.ENDCLASS) AndAlso Not CurTokenIs(TokenType.EOF)
             '解析语句
             Dim stmt = ParseStatement()
             If stmt IsNot Nothing Then '判空
@@ -805,26 +838,20 @@ Public Class Parser
     '解析标识符
     Public Function ParseIdentifier() As Expression
         Dim ident = New Identifier With {.Token = curToken, .Value = curToken.Value}
-
-        Dim additionalExp = ParseAdditionalExpressions(ident)
-        Return If(additionalExp, ident)
-
+        Return ident
     End Function
 
 
     '解析对象创建表达式
     Public Function ParseObjectCreateExpression() As Expression
-        Dim objectCreateExp = New ObjectCreateExpression With {.Token = curToken}
+        Dim objectCreateExpr = New ObjectCreateExpression With {.Token = curToken}
 
         NextToken()
-        objectCreateExp.ObjType = ParseExpression(优先级.OBJ_MEMBER)
+        objectCreateExpr.ObjType = ParseExpression(优先级.OBJ_MEMBER - 1)
 
         NextToken()
-        objectCreateExp.Arguments = ParseExpressionList(TokenType.RPAREN)
-
-        Dim additionalExp = ParseAdditionalExpressions(objectCreateExp)
-        Return If(additionalExp, objectCreateExp)
-
+        objectCreateExpr.Arguments = ParseExpressionList(TokenType.RPAREN)
+        Return objectCreateExpr
     End Function
 
     '解析文件导入表达式
@@ -851,61 +878,22 @@ Public Class Parser
         Return fileImportExp
     End Function
 
+    Public Function ParseObjectMemberExpression(leftExp As Expression) As Expression
+        Dim exp As New ObjectMemberExpression With {
+            .Token = curToken,
+            .Left = leftExp
+        }
 
+        '下一个Token
+        NextToken()
 
-    Public Function ParseAdditionalExpressions(expression As Expression) As Expression
-        Dim currentExp As Expression = expression
-        Dim newExp As Expression
+        exp.Right = ParseExpression(优先级.OBJ_MEMBER)
 
-        ' 尝试解析逻辑表达式
-        newExp = ParseLogicalExpression(currentExp)
-        If newExp IsNot Nothing Then
-            currentExp = newExp
-        End If
-
-        ' 尝试解析对象成员表达式
-ObjMemberParse:
-        newExp = ParseObjectMemberExpression(currentExp)
-        If newExp IsNot Nothing Then
-            currentExp = newExp
-            GoTo ObjMemberParse
-        End If
-
-
-        newExp = ParseAssignmentExpression(currentExp)
-        If newExp IsNot Nothing Then
-            currentExp = newExp
-        End If
-
-        Return currentExp
-    End Function
-
-    Public Function ParseObjectMemberExpression(leftExp As Expression)
-        If PeekTokenIs(TokenType.DOT) Then
-            Dim exp As New ObjectMemberExpression With {
-                .Token = curToken,
-                .Left = leftExp
-            }
-
-            '下一个Token
-            NextToken()
-            NextToken()
-
-            exp.Right = New Identifier With {.Token = curToken, .Value = curToken.Value}
-
-            Return exp
-        End If
-
-        Return Nothing
+        Return exp
     End Function
 
     Public Function ParseAssignmentExpression(leftExp As Expression)
-
-        If PeekTokenIs(TokenType.ASSIGN) Then
-
-            '下一个Token
-            NextToken()
-
+        If CurTokenIs(TokenType.ASSIGN) Then
             Dim exp As New AssignmentExpression With {.Token = curToken, .SetExp = leftExp}
 
             '下一个Token
@@ -921,11 +909,10 @@ ObjMemberParse:
     End Function
 
     Public Function ParseLogicalExpression(leftExp As Expression)
-        If PeekTokenIs(TokenType.BOOL_AND) Then
+        If CurTokenIs(TokenType.BOOL_AND) Then
             Dim andExp As New AndExpression With {.Token = peekToken, .Left = leftExp}
 
             '前进词法单元
-            NextToken()
             NextToken()
 
             Dim rightExp = ParseExpression(优先级.LOWEST)
@@ -934,11 +921,10 @@ ObjMemberParse:
             Return andExp
         End If
 
-        If PeekTokenIs(TokenType.BOOL_OR) Then
+        If CurTokenIs(TokenType.BOOL_OR) Then
             Dim orExp As New OrExpression With {.Token = peekToken, .Left = leftExp}
 
             '前进词法单元
-            NextToken()
             NextToken()
 
             Dim rightExp = ParseExpression(优先级.LOWEST)
@@ -952,10 +938,8 @@ ObjMemberParse:
 
     '解析Bool表达式
     Public Function ParseBoolean() As Expression
-        Dim BoolExp = New Bool With {.Token = curToken, .Value = CurTokenIs(TokenType.BOOL_TRUE)}
-
-        Dim additionalExp = ParseAdditionalExpressions(BoolExp)
-        Return If(additionalExp, BoolExp)
+        Dim exp = New Bool With {.Token = curToken, .Value = CurTokenIs(TokenType.BOOL_TRUE)}
+        Return exp
     End Function
 
     '解析整数表达式
@@ -983,8 +967,7 @@ ObjMemberParse:
                     Return Nothing
                 End Try
 
-                Dim double_additionalExp = ParseAdditionalExpressions(dbl_lit)
-                Return If(double_additionalExp, dbl_lit)
+                Return dbl_lit
             End If
         End If
 
@@ -993,7 +976,7 @@ ObjMemberParse:
                 lit.Token.Value = Trim(lit.Token.Value.ToString.Substring(2))
                 lit.Value = Convert.ToInt64(lit.Token.Value, 16)
 
-                GoTo additionalExp
+                Return lit
             End If
 
             lit.Value = BigInteger.Parse(lit.Token.Value)
@@ -1006,10 +989,7 @@ ObjMemberParse:
 
             Return Nothing
         End Try
-
-additionalExp:
-        Dim additionalExp = ParseAdditionalExpressions(lit)
-        Return If(additionalExp, lit)
+        Return lit
     End Function
 
     '...
@@ -1074,6 +1054,8 @@ additionalExp:
                 Return ParseWhileStatement()
             Case TokenType.CLASS_
                 Return ParseClassStatement()
+            Case TokenType.TRY_
+                Return ParseTryCatchStatement()
             Case TokenType.EOL 'EOL 没啥大用
                 Return New EOLStatement With {.Token = curToken}
             Case Else '都不是
@@ -1087,27 +1069,27 @@ additionalExp:
     End Function
 
     Public Sub NoPrefixParseFnError(tkn As TokenType)
-        Dim msg = $"no prefix parse Function For {tkn.ToString} found"
+        Dim msg = $"no prefix parse Function For {tkn} found"
         'Console.WriteLine(msg)
     End Sub
 
     '探查错误
     Public Sub PeekError(tkn As TokenType)
         If Token.StringDict.ContainsKey(tkn) AndAlso Token.StringDict.ContainsKey(peekToken.TokenType) Then
-            Dim msg_cn = $"错误！ 下一个词法单元类型应为 {Token.StringDict(tkn)}, 但却是 {Token.StringDict(peekToken.TokenType)},{vbCrLf}内容:{peekToken.Value.ToString}"
+            Dim msg_cn = $"错误！ 下一个词法单元类型应为 {Token.StringDict(tkn)}, 但却是 {Token.StringDict(peekToken.TokenType)},{vbCrLf}内容:{peekToken.Value}"
             errors.Add(msg_cn)
         Else
-            Dim msg_cn = $"错误！ 下一个词法单元类型应为 {tkn}, 但却是 {peekToken.TokenType},{vbCrLf}内容:{peekToken.Value.ToString}"
+            Dim msg_cn = $"错误！ 下一个词法单元类型应为 {tkn}, 但却是 {peekToken.TokenType},{vbCrLf}内容:{peekToken.Value}"
             errors.Add(msg_cn)
         End If
     End Sub
 
     Public Sub CurError(tkn As TokenType)
         If Token.StringDict.ContainsKey(tkn) AndAlso Token.StringDict.ContainsKey(curToken.TokenType) Then
-            Dim msg_cn = $"错误！ 当前词法单元类型应为 {Token.StringDict(tkn)}, 但却是 {Token.StringDict(curToken.TokenType)},{vbCrLf}内容:{curToken.Value.ToString}"
+            Dim msg_cn = $"错误！ 当前词法单元类型应为 {Token.StringDict(tkn)}, 但却是 {Token.StringDict(curToken.TokenType)},{vbCrLf}内容:{curToken.Value}"
             errors.Add(msg_cn)
         Else
-            Dim msg_cn = $"错误！ 当前词法单元类型应为 {tkn}, 但却是 {curToken.TokenType},{vbCrLf}内容:{curToken.Value.ToString}"
+            Dim msg_cn = $"错误！ 当前词法单元类型应为 {tkn}, 但却是 {curToken.TokenType},{vbCrLf}内容:{curToken.Value}"
             errors.Add(msg_cn)
         End If
     End Sub
@@ -1165,7 +1147,6 @@ additionalExp:
         End While
 
         Return leftExp
-
     End Function
 
     '解析Dim语句 返回一个DimStatement类型的对象
