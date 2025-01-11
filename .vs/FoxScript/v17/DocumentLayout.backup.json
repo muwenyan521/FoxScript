@@ -3,14 +3,19 @@
   "WorkspaceRootPath": "D:\\soft\\FoxScript\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\soft\\FoxGUI\\Shared\\Window.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\utils.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:utils.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|d:\\soft\\foxscript\\errors\\error.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:errors\\error.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\evaluator\\evaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:evaluator\\evaluator.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|d:\\soft\\foxscript\\parser.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
+      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\parser.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:parser.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
@@ -32,14 +37,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\semanticanalyzer.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
       "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:semanticanalyzer.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\utils.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:utils.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\errors\\error.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
-      "RelativeMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|solutionrelative:errors\\error.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{DAA98288-D937-407A-BD81-AFDBF2B32C36}|FoxScript.vbproj|D:\\soft\\FoxScript\\ast.vb||{2C015C70-C72C-11D0-88C3-00A0C9110049}",
@@ -72,7 +69,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 11,
+          "SelectedChildIndex": 19,
           "Children": [
             {
               "$type": "Bookmark",
@@ -120,33 +117,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Window.vb",
-              "DocumentMoniker": "D:\\soft\\FoxGUI\\Shared\\Window.vb",
-              "RelativeDocumentMoniker": "..\\FoxGUI\\Shared\\Window.vb",
-              "ToolTip": "D:\\soft\\FoxGUI\\Shared\\Window.vb",
-              "RelativeToolTip": "..\\FoxGUI\\Shared\\Window.vb",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAFAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-11T11:06:40.824Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 1,
               "Title": "Error.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Errors\\Error.vb",
               "RelativeDocumentMoniker": "Errors\\Error.vb",
               "ToolTip": "D:\\soft\\FoxScript\\Errors\\Error.vb",
               "RelativeToolTip": "Errors\\Error.vb",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAswAsAAAAbAAAAAAAAAA==",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAmwAsAAAAbAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2025-01-10T14:53:51.104Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "Parser.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Parser.vb",
               "RelativeDocumentMoniker": "Parser.vb",
@@ -154,12 +138,11 @@
               "RelativeToolTip": "Parser.vb",
               "ViewState": "AgIAAEkDAAAAAAAAAAAnwFUDAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-04T03:09:12.987Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-04T03:09:12.987Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "Lexer.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Lexer.vb",
               "RelativeDocumentMoniker": "Lexer.vb",
@@ -167,12 +150,11 @@
               "RelativeToolTip": "Lexer.vb",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-09T05:33:59.369Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-09T05:33:59.369Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "InfixExpressionEvaluator.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Evaluator\\InfixExpressionEvaluator.vb",
               "RelativeDocumentMoniker": "Evaluator\\InfixExpressionEvaluator.vb",
@@ -180,12 +162,11 @@
               "RelativeToolTip": "Evaluator\\InfixExpressionEvaluator.vb",
               "ViewState": "AgIAAB0AAAAAAAAAAAAIwGwAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-04T02:58:13.507Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-04T02:58:13.507Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Evaluator.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Evaluator\\Evaluator.vb",
               "RelativeDocumentMoniker": "Evaluator\\Evaluator.vb",
@@ -193,12 +174,11 @@
               "RelativeToolTip": "Evaluator\\Evaluator.vb",
               "ViewState": "AgIAAHMBAAAAAAAAAAArwIQBAAAQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-04T02:57:54.521Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-04T02:57:54.521Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "SliceExpressionEvaluator.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Evaluator\\SliceExpressionEvaluator.vb",
               "RelativeDocumentMoniker": "Evaluator\\SliceExpressionEvaluator.vb",
@@ -206,12 +186,11 @@
               "RelativeToolTip": "Evaluator\\SliceExpressionEvaluator.vb",
               "ViewState": "AgIAAGwAAAAAAAAAAAAAAA0AAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-04T04:29:32.888Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-04T04:29:32.888Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 9,
               "Title": "AST.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\AST.vb",
               "RelativeDocumentMoniker": "AST.vb",
@@ -219,12 +198,11 @@
               "RelativeToolTip": "AST.vb",
               "ViewState": "AgIAABACAAAAAAAAAAAAwBwCAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-04T03:04:14.834Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-04T03:04:14.834Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "Module1.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Module1.vb",
               "RelativeDocumentMoniker": "Module1.vb",
@@ -232,25 +210,24 @@
               "RelativeToolTip": "Module1.vb",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAD8AAAAUAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-04T09:26:03.754Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-04T09:26:03.754Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 0,
               "Title": "Utils.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Utils.vb",
               "RelativeDocumentMoniker": "Utils.vb",
               "ToolTip": "D:\\soft\\FoxScript\\Utils.vb",
               "RelativeToolTip": "Utils.vb",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB0AAABMAAAAAAAAAA==",
+              "ViewState": "AgIAAMAAAAAAAAAAAAAUwK8AAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
               "WhenOpened": "2025-01-04T12:15:47.564Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 10,
               "Title": "AssignmentExpressionEvaluator.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Evaluator\\AssignmentExpressionEvaluator.vb",
               "RelativeDocumentMoniker": "Evaluator\\AssignmentExpressionEvaluator.vb",
@@ -258,12 +235,11 @@
               "RelativeToolTip": "Evaluator\\AssignmentExpressionEvaluator.vb",
               "ViewState": "AgIAAGYAAAAAAAAAAAAwwHIAAAAUAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-08T04:24:55.591Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-08T04:24:55.591Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 11,
               "Title": "Token.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Token.vb",
               "RelativeDocumentMoniker": "Token.vb",
@@ -271,12 +247,11 @@
               "RelativeToolTip": "Token.vb",
               "ViewState": "AgIAAIoAAAAAAAAAAAAwwMUAAAAfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-04T14:01:56.189Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-04T14:01:56.189Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 13,
               "Title": "FoxScript",
               "DocumentMoniker": "D:\\soft\\FoxScript\\FoxScript.vbproj",
               "RelativeDocumentMoniker": "FoxScript.vbproj",
@@ -287,7 +262,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 14,
               "Title": "Builtins.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Object\\Builtins.vb",
               "RelativeDocumentMoniker": "Object\\Builtins.vb",
@@ -295,12 +270,11 @@
               "RelativeToolTip": "Object\\Builtins.vb",
               "ViewState": "AgIAALwBAAAAAAAAAAAAABAAAAASAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-04T10:51:16.096Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-04T10:51:16.096Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 12,
               "Title": "Object.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\Object\\Object.vb",
               "RelativeDocumentMoniker": "Object\\Object.vb",
@@ -308,12 +282,11 @@
               "RelativeToolTip": "Object\\Object.vb",
               "ViewState": "AgIAAFAAAAAAAAAAAAA4wFoAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-04T10:51:16.688Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-04T10:51:16.688Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "SemanticAnalyzer.vb",
               "DocumentMoniker": "D:\\soft\\FoxScript\\SemanticAnalyzer.vb",
               "RelativeDocumentMoniker": "SemanticAnalyzer.vb",
@@ -321,8 +294,7 @@
               "RelativeToolTip": "SemanticAnalyzer.vb",
               "ViewState": "AgIAABEAAAAAAAAAAAAqwCIAAABDAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003361|",
-              "WhenOpened": "2025-01-09T04:50:50.688Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-09T04:50:50.688Z"
             }
           ]
         }
