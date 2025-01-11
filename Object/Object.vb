@@ -200,8 +200,12 @@ Public Class Fox_Array
         Return sb.ToString()
     End Function
 
+    Public Sub New(ParamArray Args As Fox_Object())
+        Elements = Args.ToList
+    End Sub
+
     Public Function ToList() As List(Of String)
-        Return Elements.Select(Function(e) If(TypeOf e Is String, TryCast(e, Fox_String).Value, e.Inspect)).ToList
+        Return Elements.Select(Function(e) If(TypeOf e Is String, TryCast(e, Fox_String).Value, If(e IsNot Nothing, e.Inspect, ""))).ToList
     End Function
 End Class
 
@@ -307,6 +311,13 @@ Public Class Fox_String
     Public Function Inspect() As String Implements Fox_Object.Inspect
         Return $"""{Value}"""
     End Function
+
+    Public Sub New()
+    End Sub
+
+    Public Sub New(str As String)
+        Value = str
+    End Sub
 End Class
 
 '万 恶 之 源 Nothing. 空(类似C#的null)
@@ -390,6 +401,7 @@ Public Class Fox_Class
     Public Name As Identifier
     Public CreateFunc As FunctionLiteral
     Public CreateArgs As List(Of Expression)
+    Public UUIDString As String
 
     Public Function Type() As ObjectType Implements Fox_Object.Type
         '返回Class类型
@@ -425,6 +437,7 @@ Public Class VBClass
     Public OnPropertyChangeFunction As Func(Of String, Object, Object)
     Public Env As Environment
     Public Instance
+    Public UUIDString As String
 
     Public Function Type() As ObjectType Implements Fox_Object.Type
         '返回Class类型
