@@ -1,6 +1,39 @@
 ﻿Imports System.IO
 Imports FoxScript.Utils
+Imports FoxScript.CannotFindCustomErrorException
+
+
 Public Class ErrorUtils
+
+        '判断是否为Error对象. 返回一个布尔值
+        Public Shared Function IsError(obj As Fox_Object)
+        If obj Is Nothing Then Return False
+        Return obj.Type = ObjectType.ERROR_OBJ OrElse obj.Type = ObjectType.CUSTOM_ERROR_OBJ
+    End Function
+
+    Public Shared Function IsOnlyError(obj As Fox_Object)
+        If obj Is Nothing Then Return False
+        Return obj.Type = ObjectType.ERROR_OBJ
+    End Function
+
+    Public Shared Function IsCustomError(obj As Fox_Object)
+        If obj Is Nothing Then Return False
+        Return obj.Type = ObjectType.CUSTOM_ERROR_OBJ
+    End Function
+
+
+    '引发异常 返回一个Fox_CustomError对象
+    Public Shared Function ThrowError(ErrorName As String, Message As String, ByRef Env As Environment) As Fox_CustomError
+        Dim classObject As Fox_Class
+        classObject = Env.GetValue("Error").Item1
+        If classObject Is Nothing Then
+            Throw New CannotFindCustomErrorException($"找不到自定义错误对象 {ErrorName}")
+        End If
+
+        '返回
+        Return New Fox_CustomError With {.ErrorName = ErrorName, .Message = Message, .ClassObject = classObject}
+    End Function
+
     '引发异常 返回一个Fox_Error对象
     Public Shared Function ThrowError(message As String) As Fox_Error
         '返回
@@ -171,6 +204,14 @@ End Class
 
 
 Public Class ObjectUtils
+    Public Shared Function IsNothingObject(Obj As Fox_Object) As Boolean
+        If Obj.Type = ObjectType.NOTHINGL_OBJ Then
+            Return True
+        End If
+
+        Return False
+    End Function
+
     Public Shared Function FindAllFoxObject(objs As List(Of Fox_Object), objType As ObjectType) As List(Of Fox_Object)
         Dim obj_list As New List(Of Fox_Object)
         For Each obj As Fox_Object In objs
@@ -191,5 +232,34 @@ Public Class ObjectUtils
             dict.Add(names(dataIndex), data_list(dataIndex))
         Next
         Return dict
+    End Function
+
+    Public Shared Function IsInstanceOf(obj1 As Fox_Object, obj2 As Fox_Object) As Boolean
+        If obj1.Type <> ObjectType.CLASS_OBJ AndAlso obj2.Type <> ObjectType.CLASS_OBJ Then
+            If obj1 Is Nothing OrElse obj2 Is Nothing Then
+                Return False
+            End If
+
+            If obj1.Type = obj2.Type Then
+                Return True
+            End If
+        End If
+
+        Dim classObj1 As Fox_Class = obj1
+        Dim classObj2 As Fox_Class = obj2
+
+        If classObj1.UUIDString = classObj2.UUIDString Then
+            Return True
+        ElseIf classObj1.BaseClass.UUIDString = classObj2.UUIDString Then
+            Return True
+        ElseIf classObj2.BaseClass.UUIDString = classObj1.UUIDString Then
+            Return True
+        End If
+
+        'If classObj1.BaseClass.UUIDString = classObj2.BaseClass.UUIDString Then
+        '    Return True
+        'End If
+
+        Return False
     End Function
 End Class
