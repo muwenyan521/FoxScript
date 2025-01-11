@@ -85,6 +85,10 @@ Public Enum TokenType
     FROM
 
     THROW_
+    TRY_
+    CATCH_
+    ENDTRY
+    FINALLY_
 
     EOF
 End Enum
@@ -147,6 +151,10 @@ Public Class Token
         {"AS", TokenType.AS_},
         {"LET", TokenType.LET_},
         {"THROW", TokenType.THROW_},
+        {"TRY", TokenType.TRY_},
+        {"CATCH", TokenType.CATCH_},
+        {"FINALLY", TokenType.FINALLY_},
+        {"ENDTRY", TokenType.ENDTRY},
         {vbNullChar, TokenType.EOF}
     }
 
@@ -205,6 +213,10 @@ Public Class Token
         {TokenType.AS_, "As"},
         {TokenType.LET_, "Let"},
         {TokenType.THROW_, "Throw"},
+        {TokenType.TRY_, "Try"},
+        {TokenType.CATCH_, "Catch"},
+        {TokenType.FINALLY_, "Finally"},
+        {TokenType.ENDTRY, "EndTry"},
         {TokenType.EOF, "文件结束"}
     }
 
