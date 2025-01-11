@@ -516,6 +516,38 @@ Public Class ThrowErrorExpression '引发异常表达式 比如 Throw New Error(
     End Function
 End Class
 
+Public Class TryCatchStatement 'Try-Catch语句
+    Implements Statement
+    Public Token As Token   'Try 词法单元 
+    Public TryBlock As BlockStatement '欲（尝试）执行的块
+    Public CatchBlock As BlockStatement '捕获异常时执行的块
+    Public CatchVar As Identifier '捕获异常时储存的变量
+    Public CatchClass As Identifier '欲捕获的错误类型
+
+    Public Sub statementNode() Implements Statement.StatementNode
+        Throw New NotImplementedException()
+    End Sub
+
+    Public Function TokenLiteral() As String Implements Node.TokenLiteral
+        Return Token.Value
+    End Function
+
+    Public Overrides Function ToString() As String Implements Node.ToString
+        Dim sb As New StringBuilder
+        sb.Append("Try")
+        sb.Append(" ")
+        sb.Append(TryBlock.ToString)
+        sb.Append(" ")
+        sb.Append($"Catch {CatchVar} As {CatchClass.ToString}")
+        sb.Append(" ")
+        sb.Append(CatchBlock.ToString)
+        sb.Append(" ")
+        sb.Append("EndTry")
+
+        Return sb.ToString
+    End Function
+End Class
+
 Public Class ForStatement 'For 语句
     Implements Statement
     Public Token As Token   'For 词法单元 
