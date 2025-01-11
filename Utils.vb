@@ -173,6 +173,10 @@ Public Class Utils
     End Function
 
     Public Shared Function GenerateRandomBigInteger(min As BigInteger, max As BigInteger) As BigInteger
+        If min.Equals(max) Then
+            Return min
+        End If
+
         ' 计算min和max之间的差值
         Dim range As BigInteger = max - min
 
