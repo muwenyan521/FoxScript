@@ -6,6 +6,7 @@ Imports FoxScript.BooleanUtils
 Imports FoxScript.FileSystemUtils
 Imports FoxScript.StringUtils
 Imports FoxScript.ErrorUtils
+Imports FoxScript.ObjectUtils
 Imports FoxScript.StatementUtils
 
 
@@ -35,13 +36,13 @@ Public Class InfixExpressionEvaluator
     ' 实现接口的 Eval 方法
     Public Function Eval(ParamArray Args() As Object) As Fox_Object Implements IEvaluatorHandler.Eval
         If Args.Length = 3 AndAlso TypeOf Args(0) Is String AndAlso TypeOf Args(1) Is Fox_Object AndAlso TypeOf Args(2) Is Fox_Object Then
-            Return Eval(DirectCast(Args(0), String), DirectCast(Args(1), Fox_Object), DirectCast(Args(2), Fox_Object))
+            Return _Eval(DirectCast(Args(0), String), DirectCast(Args(1), Fox_Object), DirectCast(Args(2), Fox_Object))
         Else
             Return ThrowError("参数错误")
         End If
     End Function
 
-    Public Function Eval(
+    Public Function _Eval(
         operator_ As String, '操作符
         Left As Fox_Object, '操作符左边的对象
         Right As Fox_Object '操作符右边的对象
@@ -57,10 +58,17 @@ Public Class InfixExpressionEvaluator
 
         ' 根据类型选择不同的处理函数
         Dim handler As Func(Of String, Fox_Object, Fox_Object, Fox_Object) = GetTypeHandlers(Left.Type, Right.Type)
+
         If handler IsNot Nothing Then
-            Return handler(operator_, GetType_ConvertHandlers(Left.Type, Right.Type)({Left}), GetType_ConvertHandlers(Left.Type, Right.Type)({Right}))
+            Dim ObjConvertHandler = If(GetType_ConvertHandlers(Left.Type, Right.Type), Nothing)
+            If (Left.Type <> ObjectType.NOTHINGL_OBJ AndAlso Right.Type <> ObjectType.NOTHINGL_OBJ) AndAlso Left.Type <> Right.Type AndAlso ObjConvertHandler Is Nothing Then Return ThrowError($"未知的操作: {Left.Type} {operator_} {Right.Type}")
+
+            Dim leftObj = If(ObjConvertHandler IsNot Nothing, ObjConvertHandler({Left}), Nothing)
+            Dim rightObj = If(ObjConvertHandler IsNot Nothing, ObjConvertHandler({Right}), Nothing)
+
+            Return handler(operator_, If(leftObj, Left), If(rightObj, Right))
         Else
-            Return ThrowError($"类型错误: {Left.Type} {operator_} {Right.Type}")
+            Return ThrowError($"未知的操作: {Left.Type} {operator_} {Right.Type}")
         End If
     End Function
 
@@ -86,14 +94,6 @@ Public Class InfixExpressionEvaluator
         '判空
         Dim result = CheckObject(operator_, Left, Right)
         If result IsNot Nothing Then Return result
-
-        'If Left.Type <> ObjectType.CLASS_OBJ Then
-        '    Return ThrowError($"未知的操作: {Left.Type} {operator_} {TryCast(Right, Fox_Class).Name.Value}")
-        'End If
-
-        'If Right.Type <> ObjectType.CLASS_OBJ Then
-        '    Return ThrowError($"未知的操作: {TryCast(Left, Fox_Class).Name.Value} {operator_} {Right.Type}")
-        'End If
 
         Dim leftObject As Object = Left
         Dim rightObject As Object = Right
@@ -140,30 +140,7 @@ Public Class InfixExpressionEvaluator
         If leftType = ObjectType.NOTHINGL_OBJ AndAlso rightType = ObjectType.NOTHINGL_OBJ Then Return Builtins.builtinFuncs("CNothing").BuiltinFunction
         If leftType = ObjectType.DOUBLE_OBJ OrElse rightType = ObjectType.DOUBLE_OBJ Then Return Builtins.builtinFuncs("CDbl").BuiltinFunction
 
-        If leftType = ObjectType.NOTHINGL_OBJ Then
-            Return GetType_ConvertHandlers(rightType, rightType)
-        End If
-
-        If _ConvertHandlers.ContainsKey(leftType) Then
-            Return _ConvertHandlers(leftType)
-        End If
-
         Return Nothing
-
-        'Select Case leftType
-        '    Case ObjectType.INTEGER_OBJ
-        '        Return Builtins.builtinFuncs("CInt").BuiltinFunction
-        '    Case ObjectType.BOOL_OBJ
-        '        Return Builtins.builtinFuncs("CBool").BuiltinFunction
-        '    Case ObjectType.STRING_OBJ
-        '        Return Builtins.builtinFuncs("CStr").BuiltinFunction
-        '    Case ObjectType.ARRAY_OBJ
-        '        Return Builtins.builtinFuncs("CArray").BuiltinFunction
-        '    Case ObjectType.NOTHINGL_OBJ
-        '        Return GetType_ConvertHandlers(rightType, rightType)
-        '    Case Else
-        '        Return Nothing
-        'End Select
     End Function
     Public Function EvalArrayInfixExpression(
         operator_ As String,
@@ -236,16 +213,29 @@ Public Class InfixExpressionEvaluator
         Dim result = CheckObject(operator_, Left, Right)
         If result IsNot Nothing Then Return result
 
-        Dim leftVal = TryCast(Left, Fox_String).Value
-        Dim rightVal = TryCast(Right, Fox_String).Value
+        Dim leftVal = Nothing
+        Dim rightVal = Nothing
+
+        If Not (IsNothingObject(Left) OrElse IsNothingObject(Right)) Then
+            '尝试转换对象为Fox_Integer类型并获取数值
+            leftVal = TryCast(Left, Fox_String).Value
+            rightVal = TryCast(Right, Fox_String).Value
+        Else
+            leftVal = If(IsNothingObject(Left), Nothing, TryCast(Left, Fox_String).Value)
+            rightVal = If(IsNothingObject(Right), Nothing, TryCast(Right, Fox_String).Value)
+        End If
 
         '判断操作符 并调用函数获取对应的Fox_String对象
         Select Case operator_
             Case "+"
+                If IsNothingObject(Left) OrElse IsNothingObject(Right) Then Return If(IsNothingObject(Left), Right, Left)
+
                 Return New Fox_String With {.Value = leftVal & rightVal}
             Case "==" '等于
+                If IsNothingObject(Left) OrElse IsNothingObject(Right) Then Return NativeBoolToBooleanObject(leftVal Is rightVal)
                 Return New Fox_Bool With {.Value = leftVal = rightVal}
             Case "!=", "<>" '不等于
+                If IsNothingObject(Left) OrElse IsNothingObject(Right) Then Return NativeBoolToBooleanObject(leftVal Is rightVal)
                 Return New Fox_Bool With {.Value = leftVal <> rightVal}
             Case Else
                 '信息大致内容: 未知的操作符 : [左值] [运算符] [右值]
@@ -264,9 +254,17 @@ Public Class InfixExpressionEvaluator
         Dim result = CheckObject(operator_, Left, Right)
         If result IsNot Nothing Then Return result
 
-        '尝试转换对象为 Fox_Bool型并获取布尔值
-        Dim leftVal = TryCast(Left, Fox_Bool).Value
-        Dim rightVal = TryCast(Right, Fox_Bool).Value
+        Dim leftVal = Nothing
+        Dim rightVal = Nothing
+
+        If Not (IsNothingObject(Left) OrElse IsNothingObject(Right)) Then
+            '尝试转换对象为Fox_Integer类型并获取数值
+            leftVal = TryCast(Left, Fox_Bool).Value
+            rightVal = TryCast(Right, Fox_Bool).Value
+        Else
+            leftVal = If(IsNothingObject(Left), Nothing, TryCast(Left, Fox_Bool).Value)
+            rightVal = If(IsNothingObject(Right), Nothing, TryCast(Right, Fox_Bool).Value)
+        End If
 
         '判断操作符 并调用函数获取对应的Fox_Bool对象
         Select Case operator_
@@ -288,8 +286,10 @@ Public Class InfixExpressionEvaluator
             Case ">" '大于
                 Return NativeBoolToBooleanObject(BoolToLong(leftVal) > BoolToLong(rightVal))
             Case "==" '等于
+                If IsNothingObject(Left) OrElse IsNothingObject(Right) Then Return NativeBoolToBooleanObject(leftVal Is rightVal)
                 Return NativeBoolToBooleanObject(leftVal = rightVal)
             Case "!=", "<>" '不等于
+                If IsNothingObject(Left) OrElse IsNothingObject(Right) Then Return NativeBoolToBooleanObject(leftVal IsNot rightVal)
                 Return NativeBoolToBooleanObject(leftVal <> rightVal)
             Case Else
                 '信息大致内容: 未知的操作符 : [左值] [运算符] [右值]
@@ -320,6 +320,7 @@ Public Class InfixExpressionEvaluator
     End Function
 
 
+
     '求整数值
     Public Function EvalIntegerInfixExpression(
         operator_ As String, '操作符
@@ -331,11 +332,17 @@ Public Class InfixExpressionEvaluator
         Dim result = CheckObject(operator_, Left, Right)
         If result IsNot Nothing Then Return result
 
-        '尝试转换对象为Fox_Integer类型并获取数值
-        Dim leftVal = TryCast(Left, Fox_Integer).Value
-        Dim rightVal = TryCast(Right, Fox_Integer).Value
+        Dim leftVal = Nothing
+        Dim rightVal = Nothing
 
-
+        If Not (IsNothingObject(Left) OrElse IsNothingObject(Right)) Then
+            '尝试转换对象为Fox_Integer类型并获取数值
+            leftVal = TryCast(Left, Fox_Integer).Value
+            rightVal = TryCast(Right, Fox_Integer).Value
+        Else
+            leftVal = If(IsNothingObject(Left), Nothing, TryCast(Left, Fox_Integer).Value)
+            rightVal = If(IsNothingObject(Right), Nothing, TryCast(Right, Fox_Integer).Value)
+        End If
 
         '判断操作符并新建对应对象
         Select Case operator_
@@ -357,8 +364,10 @@ Public Class InfixExpressionEvaluator
             Case ">" '大于
                 Return NativeBoolToBooleanObject(leftVal > rightVal)  '返回Fox_Bool类型对象
             Case "==" '等于
+                If IsNothingObject(Left) OrElse IsNothingObject(Right) Then Return NativeBoolToBooleanObject(leftVal Is rightVal)
                 Return NativeBoolToBooleanObject(leftVal = rightVal)  '返回Fox_Bool类型对象
             Case "!=", "<>" '不等于
+                If IsNothingObject(Left) OrElse IsNothingObject(Right) Then Return NativeBoolToBooleanObject(leftVal IsNot rightVal)
                 Return NativeBoolToBooleanObject(leftVal <> rightVal)  '返回Fox_Bool类型对象
             Case Else
                 '未知的操作符 : [左值] [操作符] [右值]
@@ -368,18 +377,26 @@ Public Class InfixExpressionEvaluator
 
     '求小数值
     Public Function EvalDoubleInfixExpression(
-    operator_ As String, '操作符
-    Left As Fox_Object, '操作符左边的对象
-    Right As Fox_Object ' 操作符右边的对象
-) As Fox_Object
+        operator_ As String, '操作符
+        Left As Fox_Object, '操作符左边的对象
+        Right As Fox_Object ' 操作符右边的对象
+    ) As Fox_Object
 
         '判空
         Dim result = CheckObject(operator_, Left, Right)
         If result IsNot Nothing Then Return result
 
-        '尝试转换对象为Fox_Integer类型并获取数值
-        Dim leftVal = TryCast(Left, Fox_Double).Value
-        Dim rightVal = TryCast(Right, Fox_Double).Value
+        Dim leftVal = Nothing
+        Dim rightVal = Nothing
+
+        If Not (IsNothingObject(Left) OrElse IsNothingObject(Right)) Then
+            '尝试转换对象为Fox_Integer类型并获取数值
+            leftVal = TryCast(Left, Fox_Double).Value
+            rightVal = TryCast(Right, Fox_Double).Value
+        Else
+            leftVal = If(IsNothingObject(Left), Nothing, TryCast(Left, Fox_Double).Value)
+            rightVal = If(IsNothingObject(Right), Nothing, TryCast(Right, Fox_Double).Value)
+        End If
 
         '判断操作符并新建对应对象
         Select Case operator_
@@ -401,8 +418,12 @@ Public Class InfixExpressionEvaluator
             Case ">" '大于
                 Return NativeBoolToBooleanObject(leftVal > rightVal)  '返回Fox_Double对象
             Case "==" '等于
+                If IsNothingObject(Left) OrElse IsNothingObject(Right) Then Return NativeBoolToBooleanObject(leftVal Is rightVal)
+
                 Return NativeBoolToBooleanObject(leftVal = rightVal)  '返回Fox_Double对象
             Case "!=", "<>" '不等于
+                If IsNothingObject(Left) OrElse IsNothingObject(Right) Then Return NativeBoolToBooleanObject(leftVal IsNot rightVal)
+
                 Return NativeBoolToBooleanObject(leftVal <> rightVal)  '返回Fox_Double对象
             Case Else
                 '未知的操作符 : [左值] [操作符] [右值]

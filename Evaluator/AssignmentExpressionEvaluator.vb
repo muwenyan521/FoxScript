@@ -14,9 +14,9 @@ Public Class AssignmentExpressionEvaluator
     Private Delegate Function EvalHandler(SetExp As Expression, valueExp As Expression, ByRef env As Environment) As Fox_Object
 
     Private ReadOnly _EvalHandler As New Dictionary(Of Type, EvalHandler) From {
-        {GetType(Identifier), AddressOf _IdentiferEval},
-        {GetType(IndexExpression), AddressOf _IndexExpressionEval},
-        {GetType(ObjectMemberExpression), AddressOf _ObjectMemberExpressionEval}
+        {GetType(Identifier), AddressOf IdentiferEval},
+        {GetType(IndexExpression), AddressOf IndexExpressionEval},
+        {GetType(ObjectMemberExpression), AddressOf ObjectMemberExpressionEval}
     }
 
 
@@ -24,7 +24,7 @@ Public Class AssignmentExpressionEvaluator
         _Evaluator = evaluator
     End Sub
 
-    Private Function _IdentiferEval(SetExp As Expression, valueExp As Expression, ByRef env As Environment) As Fox_Object
+    Private Function IdentiferEval(SetExp As Expression, valueExp As Expression, ByRef env As Environment) As Fox_Object
         '转换为表达式为Identifier
         Dim ident = TryCast(SetExp, Identifier)
 
@@ -41,7 +41,7 @@ Public Class AssignmentExpressionEvaluator
         Return Nothing
     End Function
 
-    Private Function _IndexExpressionEval(SetExp As Expression, valueExp As Expression, ByRef env As Environment) As Fox_Object
+    Private Function IndexExpressionEval(SetExp As Expression, valueExp As Expression, ByRef env As Environment) As Fox_Object
         Dim indexExp = TryCast(SetExp, IndexExpression)
         Dim left = _Evaluator.Eval(indexExp.Left, env)
         If IsError(left) Then Return left
@@ -85,7 +85,7 @@ Public Class AssignmentExpressionEvaluator
         Return Nothing
     End Function
 
-    Public Function _ObjectMemberExpressionEval(SetExp As Expression, valueExp As Expression, ByRef env As Environment) As Fox_Object
+    Public Function ObjectMemberExpressionEval(SetExp As Expression, valueExp As Expression, ByRef env As Environment) As Fox_Object
         Dim ObjectMemberExp = TryCast(SetExp, ObjectMemberExpression)
         Dim ClassObject As Object = _Evaluator.Eval(ObjectMemberExp.Left, env)
         If IsError(ClassObject) Then Return ClassObject

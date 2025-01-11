@@ -1,0 +1,35 @@
+Class Array : Object
+	Dim Type = "Array"
+	Dim Value = []
+	Func Add(val)
+		Me.Value = Me.Value + [val]
+	EndFunc
+
+	Func Clear()
+		Me.Value = []
+	EndFunc
+
+	Func New(list)
+		Me.Value = list
+	EndFunc
+
+	Func Filter(filterFunction)
+		dim new_list = []
+		for item in Me.Value
+			dim filterFunctionResult = filterFunction(item)
+			if filterFunctionResult then
+				new_list = new_list + [item]
+			endif
+		next
+
+		return new_list
+	EndFunc
+
+	Func Count()
+		return len(Value)
+	EndFunc
+
+	Func Sort()
+		Me.Value = Sort(Me.Value)
+	EndFunc 
+EndClass

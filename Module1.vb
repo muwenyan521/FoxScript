@@ -23,13 +23,24 @@ Public Class Runner
         Return result
     End Function
 
+    Public Sub ImportSystemModule(ByRef env As Environment)
+        Eval($"from System import *", env)
+        Eval($"from Error import *", env)
+        Return
+    End Sub
+
     Public Sub Run()
         Dim env As New Environment
         env.SetValue(
             "ModulePath",
-            Eval($"[{$"""{AppPath}\includes\"}""]", env),
+            New Fox_Array(
+                New Fox_String($"{AppPath}\includes\"),
+                New Fox_String(If(FilePath <> "", Path.GetDirectoryName(FilePath), ""))
+            ),
             True
         )
+
+        ImportSystemModule(env)
 
         Dim evaluator As New Evaluator
         Dim lexer As Lexer
@@ -37,6 +48,8 @@ Public Class Runner
         Dim analyzer As SemanticAnalyzer
 
         If Mode = "REPL" Then
+            Console.Clear()
+
             Dim art As String =
                 "  _____                    ____                  _           _   " & vbCrLf &
                 " |  ___|   ___   __  __   / ___|    ___   _ __  (_)  _ __   | |_ " & vbCrLf &
@@ -81,7 +94,7 @@ Public Class Runner
             If analyzer.CheckErrors Then Return
 
             Dim result As Fox_Object = evaluator.Eval(program, env)
-            If TypeOf result Is Fox_Error Then
+            If ErrorUtils.IsError(result) Then
                 Console.WriteLine(result.Inspect)
             End If
         End If
@@ -115,7 +128,8 @@ Public Class Runner
             {TokenType.WHILE_, TokenType.ENDWHILE},
             {TokenType.FOR_, TokenType.NEXT_},
             {TokenType.FUNC, TokenType.ENDFUNC},
-            {TokenType.CLASS_, TokenType.ENDCLASS}
+            {TokenType.CLASS_, TokenType.ENDCLASS},
+            {TokenType.TRY_, TokenType.ENDTRY}
         }
 
         For Each Start_TokenType As TokenType In MultiLine_TokenType_Dictionary.Keys
@@ -147,6 +161,16 @@ Public Class Runner
 
 
     Public Function RunModule(ByRef env As Environment)
+
+        env.SetValue(
+            "ModulePath",
+            New Fox_Array(
+                New Fox_String($"{AppPath}\includes\"),
+                New Fox_String(If(FilePath <> "", Path.GetDirectoryName(FilePath), ""))
+            ),
+            True
+        )
+
         Dim evaluator As New Evaluator
         Dim lexer As Lexer
         Dim parser As Parser
@@ -168,9 +192,9 @@ Public Class Runner
         End If
 
         Dim result As Fox_Object = evaluator.Eval(program, env)
-        If result IsNot Nothing Then
-            Console.WriteLine(result.Inspect)
-        End If
+        'If result IsNot Nothing Then
+        '    Console.WriteLine(result.Inspect)
+        'End If
 
         Return program.Statements
     End Function

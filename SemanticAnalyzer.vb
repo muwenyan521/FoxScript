@@ -32,7 +32,7 @@ Public Class SemanticAnalyzer
                 If prefixExp.Right Is Nothing Then Errors.Add($"{prefixExp.Operator_} 后面应为表达式 在第{prefixExp.Token.Line}行")
             Case GetType(InfixExpression) '中缀表达式
                 If node.Left Is Nothing OrElse node.Right Is Nothing Then
-                    Errors.Add($"错误的表达式: 内容 {node.ToString}")
+                    Errors.Add($"错误的表达式: 内容 {node.ToString} 在第{node.Token.Line}行")
                     Return
                 End If
 

@@ -1,0 +1,22 @@
+from . import Object
+from Object import Object
+
+Class Error : Object
+	Dim Message = ""
+	Dim Type = "Error" 
+	Func New(Message)
+		Me.Message = Message
+	EndFunc
+EndClass
+
+Class TypeError : Error
+    Func New(Message)
+		Me.Message = Message
+	EndFunc
+EndClass
+
+Class IndexOutOfRangeError : Error
+    Func New(Message)
+		Me.Message = Message
+	EndFunc
+EndClass

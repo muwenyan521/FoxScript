@@ -29,15 +29,15 @@ Public Class SliceExpressionEvaluator
         stepObject As Fox_Object
     ) As Fox_Object   '返回一个对象 
         If TypeOf Obj Is Fox_Array Then
-            Return _ArrayObjectEval(Obj, startIndexObject, stopIndexObject, stepObject)
+            Return ArrayObjectEval(Obj, startIndexObject, stopIndexObject, stepObject)
         ElseIf TypeOf Obj Is Fox_String Then
-            Return _StringObjectEval(Obj, startIndexObject, stopIndexObject, stepObject)
+            Return StringObjectEval(Obj, startIndexObject, stopIndexObject, stepObject)
         End If
 
         Return ThrowError($"不支持的类型 {Obj.Type}")
     End Function
 
-    Private Function _ArrayObjectEval(
+    Private Function ArrayObjectEval(
         arrayObj As Fox_Object,
         startIndexObject As Fox_Object,
         stopIndexObject As Fox_Object,
@@ -84,7 +84,7 @@ Public Class SliceExpressionEvaluator
         Return New Fox_Array With {.Elements = arr}
     End Function
 
-    Private Function _StringObjectEval(
+    Private Function StringObjectEval(
         stringObj As Fox_Object,
         startIndexObject As Fox_Object,
         stopIndexObject As Fox_Object,

@@ -1,0 +1,11 @@
+Class A
+    Class SubA
+        dim a = 0
+    EndClass
+
+    dim b = SubA.a + 1
+EndClass
+
+print(A.SubA.a)
+print(A.b)
+input()

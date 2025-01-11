@@ -1,0 +1,9 @@
+Func f(num)
+    Func inner(num)
+        return num * num
+    EndFunc
+    Return inner(num)
+EndFunc
+
+print(f(100))
+input()

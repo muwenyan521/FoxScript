@@ -1,5 +1,4 @@
 ﻿Imports System.Globalization
-Imports Emoji.Wpf
 
 Public Class Lexer
     Private ReadOnly _code As String ' 要分析的文本

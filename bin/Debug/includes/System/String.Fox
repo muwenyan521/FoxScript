@@ -1,0 +1,73 @@
+from Object import *
+from Error import *
+
+Class String : Object
+	Dim Value = ""
+    Dim Empty = ""
+
+	Func IsEmpty(Text)
+		Return Text == Me.Empty
+	EndFunc
+
+	Func Count()
+		return len(Value)
+	EndFunc
+
+	Func Replace(oldStr, newStr)
+		Return replace(Me.Value, oldStr, newStr)
+	EndFunc
+
+	Func Format(format_list)
+ 		return format(Me.Value, format_list)
+ 	EndFunc
+
+	Func __Add__(right)
+		If GetObjectType(right) == "String" Then
+	 		Return Me.Value + right.Value
+		EndIf
+
+		If GetObjectType(right) == "STRING_OBJ" Then
+	 		Return Me.Value + right
+		EndIf
+
+        Throw New TypeError(format("错误的类型: {}",[GetObjectType(right)]))
+ 	EndFunc
+
+	Func New(string)
+		Me.Value = string
+	EndClass
+
+	Func __Multiply__(right)
+		If GetObjectType(right) == "Integer" Then
+	 		dim str = ""
+			for i in range(right.Value)
+				str = str + Me.Value
+			next
+
+			return str
+		EndIf
+
+		If GetObjectType(right) == "INTEGER_OBJ" Then
+	 		dim str = ""
+			for i in range(right)
+				str = str + Me.Value
+			next
+
+			return str
+		EndIf
+	EndFunc
+
+	Func GetType()
+		return "String"
+	EndFunc
+EndClass
+
+Class Strings
+	Func Replace(str, oldStr, newStr)
+		Return replace(str, oldStr, newStr)
+	EndFunc
+ 
+ 	Func Format(format_string, format_list)
+ 		return format(format_string, format_list)
+ 	EndFunc
+EndClass
